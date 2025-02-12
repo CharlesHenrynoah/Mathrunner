@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Brain, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { captureAndAnalyzeScreen } from "@/lib/screen-analysis";
 
 interface CoachProps {
   gameStats: {
@@ -11,7 +10,6 @@ interface CoachProps {
     totalCorrect: number;
     totalIncorrect: number;
     avgResponseTime: number;
-    totalQuestions: number;
   };
   currentLevel: number;
   timeLeft: number;
@@ -22,17 +20,15 @@ interface Tip {
   message: string;
   type: 'info' | 'warning' | 'success';
   timestamp: number;
-  source: 'gemini' | 'stats' | 'time';
+  source: 'stats' | 'time';
 }
 
 export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
   const [tips, setTips] = useState<Tip[]>([]);
   const [isVisible, setIsVisible] = useState(true);
   const lastTipTimestamps = useRef<Record<string, number>>({});
-  const lastAnalysisTime = useRef<number>(0);
 
   const COOLDOWN_TIMES = {
-    gemini: 1500,    // 1.5 secondes entre les conseils Gemini
     stats: 2000,     // 2 secondes entre les conseils basés sur les stats
     time: 1000       // 1 seconde entre les conseils sur le temps
   };
@@ -73,73 +69,56 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
   };
 
   useEffect(() => {
-    const generateTip = async () => {
-      const now = Date.now();
-
-      // Éviter les analyses trop fréquentes
-      if (now - lastAnalysisTime.current < 300) return; // Réduit à 300ms
-      lastAnalysisTime.current = now;
-
-      // Analyse d'écran via Gemini pour des conseils contextuels
-      try {
-        const analysis = await captureAndAnalyzeScreen();
+    const generateTip = () => {
+      // Conseil basé sur le temps restant (plus urgent)
+      if (timeLeft < 30) {
+        const urgencyLevel = timeLeft < 15 ? 'critique' : 'important';
+        const emoji = timeLeft < 15 ? '⚡' : '⏰';
         addTip({
-          ...analysis,
-          source: 'gemini'
+          message: `${emoji} ${timeLeft < 10 ? 'URGENT' : 'Vite'} ! ${timeLeft.toFixed(0)}s - Bonus temps nécessaire !`,
+          type: 'warning',
+          source: 'time'
         });
-      } catch (error) {
-        console.error('Failed to get screen analysis:', error);
+      }
 
-        // Conseil basé sur le temps restant (plus urgent)
-        if (timeLeft < 30) {
-          const urgencyLevel = timeLeft < 15 ? 'critique' : 'important';
-          const emoji = timeLeft < 15 ? '⚡' : '⏰';
+      // Conseils basés sur les performances
+      if (gameStats.totalCorrect + gameStats.totalIncorrect > 0) {
+        const isSpeedingUp = gameStats.avgResponseTime < 3;
+        const hasHighErrorRate = gameStats.totalIncorrect > gameStats.totalCorrect * 0.3;
+
+        if (isSpeedingUp && hasHighErrorRate) {
           addTip({
-            message: `${emoji} ${timeLeft < 10 ? 'URGENT' : 'Vite'} ! ${timeLeft.toFixed(0)}s - Bonus temps nécessaire !`,
+            message: "🎯 Ralentissez un peu pour plus de précision !",
             type: 'warning',
-            source: 'time'
+            source: 'stats'
           });
         }
 
-        // Conseils rapides basés sur les performances
-        if (gameStats.totalQuestions > 0) {
-          const isSpeedingUp = gameStats.avgResponseTime < 3;
-          const hasHighErrorRate = gameStats.totalIncorrect > gameStats.totalCorrect * 0.3;
+        // Analyse du type d'opération actuel
+        const weakestType = Object.entries(gameStats.typeStats)
+          .filter(([_, stats]) => stats.total >= 2)
+          .sort(([_, a], [__, b]) => (a.correct / a.total) - (b.correct / b.total))[0];
 
-          if (isSpeedingUp && hasHighErrorRate) {
-            addTip({
-              message: "🎯 Ralentissez un peu pour plus de précision !",
-              type: 'warning',
-              source: 'stats'
-            });
-          }
+        if (weakestType && (weakestType[1].correct / weakestType[1].total) < 0.7) {
+          const tips = {
+            addition: "➕ Groupez les nombres !",
+            subtraction: "➖ Pensez ligne numérique !",
+            multiplication: "✖️ Table proche = repère !",
+            division: "➗ Parts égales !",
+            power: "🔢 Étape par étape !",
+            algebra: "🔤 Isolez x !"
+          };
 
-          // Analyse du type d'opération actuel
-          const weakestType = Object.entries(gameStats.typeStats)
-            .filter(([_, stats]) => stats.total >= 2)
-            .sort(([_, a], [__, b]) => (a.correct / a.total) - (b.correct / b.total))[0];
-
-          if (weakestType && (weakestType[1].correct / weakestType[1].total) < 0.7) {
-            const tips = {
-              addition: "➕ Groupez les nombres !",
-              subtraction: "➖ Pensez ligne numérique !",
-              multiplication: "✖️ Table proche = repère !",
-              division: "➗ Parts égales !",
-              power: "🔢 Étape par étape !",
-              algebra: "🔤 Isolez x !"
-            };
-
-            addTip({
-              message: tips[weakestType[0] as keyof typeof tips] || `Focus ${weakestType[0]} !`,
-              type: 'info',
-              source: 'stats'
-            });
-          }
+          addTip({
+            message: tips[weakestType[0] as keyof typeof tips] || `Focus ${weakestType[0]} !`,
+            type: 'info',
+            source: 'stats'
+          });
         }
       }
     };
 
-    const interval = setInterval(generateTip, 300); // Analyse toutes les 300ms
+    const interval = setInterval(generateTip, 300);
     generateTip(); // Premier appel immédiat
 
     return () => clearInterval(interval);
