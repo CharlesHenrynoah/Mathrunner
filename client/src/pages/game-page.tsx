@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { generateProblem, checkAnswer } from "@/lib/game-utils";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function GamePage() {
   const { user } = useAuth();
@@ -86,12 +87,10 @@ export default function GamePage() {
       }, 1000);
     } else {
       setFeedback("incorrect");
-      setIsActive(false);
-      submitRecord.mutate({
-        score,
-        level: user!.currentLevel,
-        problemType: problem.type
-      });
+      setAnswer(""); // Réinitialise juste la réponse, garde le même problème
+      setTimeout(() => {
+        setFeedback(null);
+      }, 1000);
     }
   };
 
@@ -131,8 +130,23 @@ export default function GamePage() {
           <Progress value={timeLeft} className="h-2" />
         </div>
 
+        {feedback && (
+          <Alert variant={feedback === "correct" ? "default" : "destructive"} className="animate-in fade-in">
+            <div className="flex items-center gap-2">
+              {feedback === "correct" ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <XCircle className="h-4 w-4" />
+              )}
+              <AlertDescription>
+                {feedback === "correct" ? "Correct !" : "Incorrect, essayez encore !"}
+              </AlertDescription>
+            </div>
+          </Alert>
+        )}
+
         {isActive ? (
-          <Card className={feedback === "correct" ? "border-green-500" : feedback === "incorrect" ? "border-red-500" : ""}>
+          <Card>
             <CardContent className="p-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="text-center">
@@ -149,13 +163,9 @@ export default function GamePage() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={submitRecord.isPending || !answer}
+                  disabled={!answer}
                 >
-                  {submitRecord.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "Valider"
-                  )}
+                  Valider
                 </Button>
               </form>
             </CardContent>
