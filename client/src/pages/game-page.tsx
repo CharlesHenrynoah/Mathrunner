@@ -10,6 +10,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Runner } from "@/components/Runner";
 
 export default function GamePage() {
   const { user } = useAuth();
@@ -124,6 +125,10 @@ export default function GamePage() {
     setFeedback(null);
   };
 
+  const handleTargetReached = () => {
+    setTimeLeft(prev => Math.min(prev + 10, 100));
+  };
+
   return (
     <div className="min-h-screen p-8 bg-background">
       <div className="max-w-2xl mx-auto space-y-8">
@@ -181,30 +186,33 @@ export default function GamePage() {
         )}
 
         {isActive ? (
-          <Card>
-            <CardContent className="p-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="text-center">
-                  <p className="text-4xl font-bold mb-4">{problem.question}</p>
-                  <Input
-                    type="number"
-                    value={answer}
-                    onChange={(e) => setAnswer(e.target.value)}
-                    className="text-center text-2xl"
-                    placeholder="Entrez votre réponse"
-                    autoFocus
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={!answer}
-                >
-                  Valider
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+          <>
+            <Runner onTargetReached={handleTargetReached} />
+            <Card>
+              <CardContent className="p-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="text-center">
+                    <p className="text-4xl font-bold mb-4">{problem.question}</p>
+                    <Input
+                      type="number"
+                      value={answer}
+                      onChange={(e) => setAnswer(e.target.value)}
+                      className="text-center text-2xl"
+                      placeholder="Entrez votre réponse"
+                      autoFocus
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={!answer}
+                  >
+                    Valider
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </>
         ) : (
           <Card>
             <CardContent className="p-6 text-center">
