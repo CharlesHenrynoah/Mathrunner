@@ -13,8 +13,20 @@ export async function captureAndAnalyzeScreen(): Promise<GeminiAnalysis> {
       throw new Error('Game container not found');
     }
 
-    const canvas = await html2canvas(gameElement);
-    const imageData = canvas.toDataURL('image/jpeg', 0.5); // Réduit la qualité pour diminuer la taille
+    // Configuration spécifique pour html2canvas
+    const canvas = await html2canvas(gameElement, {
+      logging: false, // Désactive les logs internes
+      useCORS: true, // Active CORS pour les images externes
+      scale: 1, // Échelle réduite pour diminuer la taille
+      backgroundColor: null // Garde la transparence
+    });
+
+    // Convertit en PNG pour une meilleure compatibilité
+    const imageData = canvas.toDataURL('image/png', 0.5);
+
+    // Vérifie la taille de l'image
+    const imageSize = Math.round((imageData.length - 22) * 3 / 4);
+    console.log(`Image size: ${imageSize} bytes`);
 
     // Prépare les données pour Gemini
     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent', {
@@ -28,7 +40,7 @@ export async function captureAndAnalyzeScreen(): Promise<GeminiAnalysis> {
           parts: [
             {
               inlineData: {
-                mimeType: "image/jpeg",
+                mimeType: "image/png",
                 data: imageData.split(',')[1]
               }
             },
@@ -55,14 +67,15 @@ export async function captureAndAnalyzeScreen(): Promise<GeminiAnalysis> {
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('Gemini API error:', errorData);
-      throw new Error(`API error: ${response.status}`);
+      console.error('Gemini API error details:', errorData);
+      throw new Error(`API error ${response.status}: ${JSON.stringify(errorData)}`);
     }
 
     const data = await response.json();
-    console.log('Gemini response:', data); // Debug log
+    console.log('Gemini response:', data);
 
     if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      console.error('Invalid API response structure:', data);
       throw new Error('Invalid API response format');
     }
 
@@ -86,7 +99,11 @@ export async function captureAndAnalyzeScreen(): Promise<GeminiAnalysis> {
       type
     };
   } catch (error) {
-    console.error('Error analyzing screen:', error);
+    console.error('Error in captureAndAnalyzeScreen:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     throw error;
   }
 }
