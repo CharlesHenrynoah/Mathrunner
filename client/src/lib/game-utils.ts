@@ -9,68 +9,165 @@ function getRandomInt(min: number, max: number): number {
 }
 
 export function generateProblem(level: number): Problem {
-  const operations = [
-    { type: "addition", symbol: "+", difficulty: 1 },
-    { type: "subtraction", symbol: "-", difficulty: 2 },
-    { type: "multiplication", symbol: "×", difficulty: 3 },
-    { type: "division", symbol: "÷", difficulty: 4 }
-  ];
-
-  const availableOps = operations.filter(op => op.difficulty <= level);
-  const operation = availableOps[Math.floor(Math.random() * availableOps.length)];
-
-  let a: number, b: number, answer: number;
-
-  switch (operation.type) {
-    case "addition":
-      if (level === 1) {
-        a = getRandomInt(1, 10);
-        b = getRandomInt(1, 10);
-      } else {
-        a = getRandomInt(10, 50);
-        b = getRandomInt(10, 50);
-      }
-      answer = a + b;
-      break;
-    case "subtraction":
-      if (level === 1) {
-        answer = getRandomInt(1, 10);
-        b = getRandomInt(1, answer);
-      } else {
-        answer = getRandomInt(10, 50);
-        b = getRandomInt(1, answer);
-      }
-      a = answer + b;
-      break;
-    case "multiplication":
-      if (level === 2) {
-        a = getRandomInt(1, 10);
-        b = getRandomInt(1, 10);
-      } else {
-        a = getRandomInt(2, 12);
-        b = getRandomInt(2, 12);
-      }
-      answer = a * b;
-      break;
-    case "division":
-      if (level === 2) {
-        b = getRandomInt(1, 5);
-        answer = getRandomInt(1, 5);
-      } else {
-        b = getRandomInt(2, 10);
-        answer = getRandomInt(2, 10);
-      }
-      a = b * answer;
-      break;
+  switch(level) {
+    case 1: // Additions et soustractions simples
+      return generateLevel1Problem();
+    case 2: // Opérations à deux chiffres et multiplications/divisions simples
+      return generateLevel2Problem();
+    case 3: // Opérations plus complexes
+      return generateLevel3Problem();
+    case 4: // Opérations avec parenthèses
+      return generateLevel4Problem();
     default:
-      throw new Error("Invalid operation");
+      return generateLevel1Problem();
+  }
+}
+
+function generateLevel1Problem(): Problem {
+  const isAddition = Math.random() < 0.5;
+  const a = getRandomInt(1, 10);
+  const b = getRandomInt(1, 10);
+
+  if (isAddition) {
+    return {
+      question: `${a} + ${b}`,
+      answer: a + b,
+      type: "addition"
+    };
+  } else {
+    const bigger = Math.max(a, b);
+    const smaller = Math.min(a, b);
+    return {
+      question: `${bigger} - ${smaller}`,
+      answer: bigger - smaller,
+      type: "subtraction"
+    };
+  }
+}
+
+function generateLevel2Problem(): Problem {
+  const operation = Math.random() < 0.5 ? 
+    (Math.random() < 0.5 ? "addition" : "subtraction") :
+    (Math.random() < 0.5 ? "multiplication" : "division");
+
+  switch (operation) {
+    case "addition": {
+      const a = getRandomInt(10, 50);
+      const b = getRandomInt(10, 50);
+      return {
+        question: `${a} + ${b}`,
+        answer: a + b,
+        type: operation
+      };
+    }
+    case "subtraction": {
+      const a = getRandomInt(25, 99);
+      const b = getRandomInt(1, a);
+      return {
+        question: `${a} - ${b}`,
+        answer: a - b,
+        type: operation
+      };
+    }
+    case "multiplication": {
+      const a = getRandomInt(2, 10);
+      const b = getRandomInt(2, 10);
+      return {
+        question: `${a} × ${b}`,
+        answer: a * b,
+        type: operation
+      };
+    }
+    case "division": {
+      const b = getRandomInt(2, 10);
+      const answer = getRandomInt(1, 10);
+      const a = b * answer;
+      return {
+        question: `${a} ÷ ${b}`,
+        answer: answer,
+        type: operation
+      };
+    }
+    default:
+      return generateLevel1Problem();
+  }
+}
+
+function generateLevel3Problem(): Problem {
+  const operation = Math.random() < 0.5 ? 
+    "multiplication" : "division";
+
+  switch (operation) {
+    case "multiplication": {
+      const a = getRandomInt(5, 15);
+      const b = getRandomInt(5, 15);
+      return {
+        question: `${a} × ${b}`,
+        answer: a * b,
+        type: operation
+      };
+    }
+    case "division": {
+      const b = getRandomInt(3, 12);
+      const answer = getRandomInt(2, 12);
+      const a = b * answer;
+      return {
+        question: `${a} ÷ ${b}`,
+        answer: answer,
+        type: operation
+      };
+    }
+    default:
+      return generateLevel2Problem();
+  }
+}
+
+function generateLevel4Problem(): Problem {
+  const type = "complex";
+  const operations = ["+", "-", "×", "÷"];
+  const op1 = operations[getRandomInt(0, 3)];
+  const op2 = operations[getRandomInt(0, 3)];
+
+  const a = getRandomInt(2, 15);
+  const b = getRandomInt(2, 15);
+  const c = getRandomInt(2, 10);
+
+  let question: string;
+  let answer: number;
+
+  const useParentheses = Math.random() < 0.5;
+
+  if (useParentheses) {
+    question = `(${a} ${op1} ${b}) ${op2} ${c}`;
+    const innerResult = calculateOperation(a, b, op1);
+    answer = calculateOperation(innerResult, c, op2);
+  } else {
+    question = `${a} ${op1} ${b} ${op2} ${c}`;
+    if (op1 === "×" || op1 === "÷") {
+      const firstResult = calculateOperation(a, b, op1);
+      answer = calculateOperation(firstResult, c, op2);
+    } else {
+      const secondResult = calculateOperation(b, c, op2);
+      answer = calculateOperation(a, secondResult, op1);
+    }
   }
 
-  return {
-    question: `${a} ${operation.symbol} ${b}`,
-    answer,
-    type: operation.type
-  };
+  return { question, answer, type };
+}
+
+function calculateOperation(a: number, b: number, operation: string): number {
+  switch (operation) {
+    case "+":
+      return a + b;
+    case "-":
+      return a - b;
+    case "×":
+      return a * b;
+    case "÷":
+      return Math.round(a / b); // Pour éviter les décimales
+    default:
+      return 0;
+  }
 }
 
 export function checkAnswer(problem: Problem, answer: number): boolean {
