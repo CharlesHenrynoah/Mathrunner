@@ -19,7 +19,7 @@ export function Runner({ onTargetReached }: RunnerProps) {
       x: Math.floor(Math.random() * gridSize),
       y: Math.floor(Math.random() * gridSize)
     };
-    
+
     let newTargetPos;
     do {
       newTargetPos = {
@@ -33,12 +33,13 @@ export function Runner({ onTargetReached }: RunnerProps) {
   };
 
   useEffect(() => {
+    // Générer les positions initiales une seule fois au montage
     generateRandomPositions();
 
     const handleKeyDown = (e: KeyboardEvent) => {
       setRunnerPos(prev => {
         let newPos = { ...prev };
-        
+
         switch (e.key) {
           case 'ArrowUp':
             if (prev.y > 0) newPos.y = prev.y - 1;
@@ -54,9 +55,11 @@ export function Runner({ onTargetReached }: RunnerProps) {
             break;
         }
 
+        // Vérifier si la cible est atteinte après le mouvement
         if (newPos.x === targetPos.x && newPos.y === targetPos.y) {
           onTargetReached();
-          generateRandomPositions();
+          // Générer de nouvelles positions après un court délai
+          setTimeout(generateRandomPositions, 100);
         }
 
         return newPos;
@@ -65,7 +68,7 @@ export function Runner({ onTargetReached }: RunnerProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [targetPos]);
+  }, [targetPos.x, targetPos.y, onTargetReached]); // Dépendances nécessaires
 
   return (
     <div className="grid grid-cols-5 gap-2 w-full max-w-md mx-auto mb-4">
