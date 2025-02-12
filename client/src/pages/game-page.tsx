@@ -126,7 +126,7 @@ export default function GamePage() {
   };
 
   const handleTargetReached = () => {
-    setTimeLeft(prev => Math.min(prev + 10, 100));
+    setTimeLeft(prev => Math.min(prev + 20, 100));
   };
 
   return (
