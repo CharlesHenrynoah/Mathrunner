@@ -21,96 +21,131 @@ interface Tip {
   id: number;
   message: string;
   type: 'info' | 'warning' | 'success';
+  timestamp: number;
 }
 
 export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
   const [tips, setTips] = useState<Tip[]>([]);
   const [isVisible, setIsVisible] = useState(true);
+  const [lastTipTypes, setLastTipTypes] = useState<Set<string>>(new Set());
   const analysisInterval = useRef<NodeJS.Timeout>();
+  const lastAnalysisTime = useRef<number>(0);
+
+  const COOLDOWN_TIME = 10000; // 10 secondes entre les conseils similaires
+  const MAX_TIPS = 3;
+
+  const addTip = (newTip: Omit<Tip, 'id' | 'timestamp'>) => {
+    const now = Date.now();
+
+    setTips(prev => {
+      // Filtrer les conseils expirés (plus vieux que 30 secondes)
+      const filteredTips = prev.filter(tip => now - tip.timestamp < 30000);
+
+      // Vérifier si un conseil similaire existe déjà
+      const hasSimilarTip = filteredTips.some(tip => 
+        tip.message === newTip.message || 
+        (now - tip.timestamp < COOLDOWN_TIME && tip.type === newTip.type)
+      );
+
+      if (hasSimilarTip) return filteredTips;
+
+      const tipWithMeta = {
+        ...newTip,
+        id: Date.now(),
+        timestamp: now
+      };
+
+      return [...filteredTips, tipWithMeta].slice(-MAX_TIPS);
+    });
+  };
 
   useEffect(() => {
     const generateTip = async () => {
-      const newTips: Tip[] = [];
+      const now = Date.now();
 
-      // Obtenir l'analyse de l'écran via Gemini
+      // Éviter les analyses trop fréquentes
+      if (now - lastAnalysisTime.current < 2000) return;
+      lastAnalysisTime.current = now;
+
+      // Score de précision actuel
+      const accuracy = gameStats.totalQuestions > 0 
+        ? (gameStats.totalCorrect / gameStats.totalQuestions) * 100
+        : 100;
+
+      // Performances par type d'opération
+      const weakestOperations = Object.entries(gameStats.typeStats)
+        .filter(([_, stats]) => stats.total >= 3)
+        .sort(([_, a], [__, b]) => (a.correct / a.total) - (b.correct / b.total))
+        .slice(0, 2);
+
+      // Analyse du temps de réponse
+      const isResponseTimeSlow = gameStats.avgResponseTime > 5;
+      const isResponseTimeFast = gameStats.avgResponseTime < 2;
+      const hasHighErrorRate = gameStats.totalIncorrect > gameStats.totalCorrect * 0.3;
+
+      // Conseils basés sur l'analyse en temps réel
+      if (timeLeft < 30 && !lastTipTypes.has('time')) {
+        addTip({
+          message: "🏃‍♂️ Attrapez vite le bonus de temps pour ne pas perdre votre progression !",
+          type: 'warning'
+        });
+        setLastTipTypes(prev => new Set([...prev, 'time']));
+      }
+
+      if (isResponseTimeSlow && !lastTipTypes.has('slow')) {
+        addTip({
+          message: "💭 Visualisez mentalement le calcul avant de répondre pour gagner en rapidité.",
+          type: 'info'
+        });
+        setLastTipTypes(prev => new Set([...prev, 'slow']));
+      }
+
+      if (isResponseTimeFast && hasHighErrorRate && !lastTipTypes.has('fast')) {
+        addTip({
+          message: "⚡ Votre vitesse est impressionnante ! Prenez une fraction de seconde pour vérifier.",
+          type: 'warning'
+        });
+        setLastTipTypes(prev => new Set([...prev, 'fast']));
+      }
+
+      // Conseils sur les types d'opérations faibles
+      weakestOperations.forEach(([type, stats]) => {
+        if (stats.total >= 3 && (stats.correct / stats.total) < 0.6 && !lastTipTypes.has(type)) {
+          const tips = {
+            addition: "➕ Décomposez les grands nombres en plus petits pour faciliter l'addition.",
+            subtraction: "➖ Visualisez une ligne numérique pour mieux comprendre la soustraction.",
+            multiplication: "✖️ Utilisez les tables que vous connaissez déjà comme points de repère.",
+            division: "➗ Pensez à la division comme à un partage en parts égales.",
+            power: "🔢 Décomposez la puissance en multiplications successives.",
+            algebra: "🔤 Isolez l'inconnue en effectuant les mêmes opérations des deux côtés."
+          };
+
+          addTip({
+            message: tips[type as keyof typeof tips] || `Prenez votre temps sur les ${type}.`,
+            type: 'info'
+          });
+          setLastTipTypes(prev => new Set([...prev, type]));
+        }
+      });
+
+      // Analyse d'écran via Gemini pour des conseils contextuels
       try {
         const analysis = await captureAndAnalyzeScreen();
-        newTips.push({
-          id: Date.now(),
-          ...analysis
-        });
+        if (analysis.message && !lastTipTypes.has('screen')) {
+          addTip(analysis);
+          setLastTipTypes(prev => new Set([...prev, 'screen']));
+        }
       } catch (error) {
         console.error('Failed to get screen analysis:', error);
       }
 
-      // Conseils basés sur le temps de réponse
-      const avgTime = gameStats.avgResponseTime;
-      if (avgTime > 5) {
-        newTips.push({
-          id: Date.now(),
-          message: "Prenez le temps de visualiser le problème. Imaginez les nombres dans votre tête avant de répondre.",
-          type: 'info'
-        });
-      } else if (avgTime < 2 && gameStats.totalIncorrect > gameStats.totalCorrect * 0.3) {
-        newTips.push({
-          id: Date.now(),
-          message: "Vous répondez très vite ! C'est bien, mais prenez une seconde de plus pour vérifier votre calcul.",
-          type: 'warning'
-        });
-      }
-
-      // Conseils basés sur la barre de temps
-      if (timeLeft < 30) {
-        newTips.push({
-          id: Date.now() + 2,
-          message: "Le temps file ! 🏃‍♂️ Attrapez le bonus de temps pour reprendre votre souffle.",
-          type: 'warning'
-        });
-      }
-
-      // Conseils basés sur la précision
-      const accuracy = gameStats.totalCorrect / (gameStats.totalCorrect + gameStats.totalIncorrect) * 100;
-      if (accuracy < 70 && gameStats.totalQuestions > 5) {
-        newTips.push({
-          id: Date.now() + 1,
-          message: "La précision est votre meilleure alliée. Respirez et concentrez-vous sur chaque problème.",
-          type: 'warning'
-        });
-      }
-
-      // Conseils par type d'opération
-      Object.entries(gameStats.typeStats).forEach(([type, stats]) => {
-        if (stats.total > 3 && (stats.correct / stats.total) < 0.6) {
-          const messages = {
-            addition: "Les additions vous donnent du fil à retordre ? Essayez de décomposer les nombres !",
-            subtraction: "Pour les soustractions, visualisez le plus grand nombre qui diminue.",
-            multiplication: "Pour les multiplications, pensez-y comme des additions répétées.",
-            division: "Les divisions sont comme des parts de gâteau : combien de parts égales peut-on faire ?"
-          };
-          newTips.push({
-            id: Date.now() + 3,
-            message: messages[type as keyof typeof messages] || `Les problèmes de type ${type} méritent plus d'attention.`,
-            type: 'info'
-          });
-        }
-      });
-
-      // Conseils basés sur le niveau et la progression
-      if (currentLevel === 1 && gameStats.totalCorrect > 10) {
-        newTips.push({
-          id: Date.now() + 4,
-          message: `Excellent rythme ! Votre moyenne de ${avgTime.toFixed(1)}s par réponse est impressionnante. 🌟`,
-          type: 'success'
-        });
-      }
-
-      if (newTips.length > 0) {
-        setTips(prev => [...prev, ...newTips].slice(-3));
-      }
+      // Réinitialiser les types de conseils après un certain temps
+      setTimeout(() => {
+        setLastTipTypes(new Set());
+      }, COOLDOWN_TIME);
     };
 
-    // Analyser l'écran toutes les secondes
-    analysisInterval.current = setInterval(generateTip, 1000);
+    analysisInterval.current = setInterval(generateTip, 2000);
     generateTip();
 
     return () => {
@@ -163,7 +198,7 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
                   </div>
                 ))
               ) : (
-                <p className="text-sm">Je suis là pour vous guider ! Prêt à relever le défi ? 🎯</p>
+                <p className="text-sm">Concentrez-vous, je vous guide ! 🎯</p>
               )}
             </div>
           </div>
