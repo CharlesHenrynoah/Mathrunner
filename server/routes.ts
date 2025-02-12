@@ -14,8 +14,8 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/game/record", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
-    const { score, level, problemType } = req.body;
+
+    const { score, level, problemType, successfulProblems } = req.body;
     const gameRecord = await storage.addGameRecord({
       userId: req.user.id,
       score,
@@ -23,10 +23,18 @@ export function registerRoutes(app: Express): Server {
       problemType
     });
 
-    const updatedUser = await storage.updateUserStats(req.user.id, score, level);
+    // Si l'utilisateur a réussi 5 problèmes, on augmente son niveau
+    const shouldLevelUp = successfulProblems >= 5;
+    const newLevel = shouldLevelUp ? Math.min(level + 1, 4) : level;
+
+    const updatedUser = await storage.updateUserStats(req.user.id, score, newLevel);
     req.login(updatedUser, (err) => {
       if (err) return res.status(500).send(err.message);
-      res.json(gameRecord);
+      res.json({ 
+        gameRecord,
+        leveledUp: shouldLevelUp,
+        newLevel
+      });
     });
   });
 

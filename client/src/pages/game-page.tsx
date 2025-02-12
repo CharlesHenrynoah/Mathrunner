@@ -40,7 +40,8 @@ export default function GamePage() {
             submitRecord.mutate({
               score,
               level: user!.currentLevel,
-              problemType: problem.type
+              problemType: problem.type,
+              successfulProblems: successfulProblems
             });
           }
           return newTime;
@@ -48,14 +49,18 @@ export default function GamePage() {
       }, timePerLevel());
     }
     return () => clearInterval(timer);
-  }, [isActive, problem.type]);
+  }, [isActive, problem.type, successfulProblems]);
 
   const submitRecord = useMutation({
-    mutationFn: async (data: { score: number; level: number; problemType: string }) => {
+    mutationFn: async (data: { score: number; level: number; problemType: string; successfulProblems: number }) => {
       const res = await apiRequest("POST", "/api/game/record", data);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.leveledUp) {
+        // Réinitialiser le compteur de problèmes réussis après avoir monté de niveau
+        setSuccessfulProblems(0);
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     }
@@ -70,14 +75,14 @@ export default function GamePage() {
       setSuccessfulProblems(prev => prev + 1);
       setTimeLeft(100);
 
-      // Si 5 problèmes sont résolus, soumettre le record et passer au niveau suivant
+      // Soumettre le record si le joueur a réussi 5 problèmes
       if (successfulProblems + 1 >= 5) {
         submitRecord.mutate({
           score,
           level: user!.currentLevel,
-          problemType: problem.type
+          problemType: problem.type,
+          successfulProblems: successfulProblems + 1
         });
-        setSuccessfulProblems(0);
       }
 
       setTimeout(() => {
