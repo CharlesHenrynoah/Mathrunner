@@ -11,6 +11,7 @@ import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Runner } from "@/components/Runner";
+import { Coach } from "@/components/Coach";
 
 interface GameStats {
   totalQuestions: number;
@@ -227,15 +228,15 @@ export default function GamePage() {
           </div>
           <div className="space-x-4">
             {!isActive && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => navigate("/dashboard")}
               >
                 Tableau de bord
               </Button>
             )}
             {isActive && (
-              <Button 
+              <Button
                 variant="outline"
                 onClick={handleStopGame}
               >
@@ -275,6 +276,15 @@ export default function GamePage() {
         {isActive ? (
           <>
             <Runner onTargetReached={handleTargetReached} />
+            <Coach
+              gameStats={{
+                typeStats: gameStats.typeStats,
+                totalCorrect: gameStats.totalCorrect,
+                totalIncorrect: gameStats.totalIncorrect,
+                avgResponseTime: gameStats.totalResponseTime / (gameStats.totalCorrect + gameStats.totalIncorrect) || 0
+              }}
+              currentLevel={currentLevel}
+            />
             <Card>
               <CardContent className="p-6">
                 <form onSubmit={handleSubmit} className="space-y-4">
