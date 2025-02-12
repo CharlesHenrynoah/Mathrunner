@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 interface Position {
   x: number;
@@ -13,6 +13,7 @@ interface RunnerProps {
 export function Runner({ onTargetReached, timeBonus = 20 }: RunnerProps) {
   const [runnerPos, setRunnerPos] = useState<Position>({ x: 0, y: 0 });
   const [targetPos, setTargetPos] = useState<Position>({ x: 2, y: 2 });
+  const targetPosRef = useRef(targetPos);
   const gridSize = 5;
 
   const generateRandomPositions = useCallback(() => {
@@ -31,6 +32,7 @@ export function Runner({ onTargetReached, timeBonus = 20 }: RunnerProps) {
 
     setRunnerPos(newRunnerPos);
     setTargetPos(newTargetPos);
+    targetPosRef.current = newTargetPos;
   }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -52,23 +54,20 @@ export function Runner({ onTargetReached, timeBonus = 20 }: RunnerProps) {
           break;
       }
 
-      // Vérifier si la cible est atteinte après le mouvement
-      if (newPos.x === targetPos.x && newPos.y === targetPos.y) {
-        onTargetReached(); // Appel du callback pour augmenter le temps
-        setTimeout(() => generateRandomPositions(), 100); // Générer de nouvelles positions avec un léger délai
+      if (newPos.x === targetPosRef.current.x && newPos.y === targetPosRef.current.y) {
+        onTargetReached();
+        generateRandomPositions();
       }
 
       return newPos;
     });
-  }, [targetPos, onTargetReached, generateRandomPositions]);
+  }, [onTargetReached, generateRandomPositions]);
 
   useEffect(() => {
-    // Générer les positions initiales au montage
     generateRandomPositions();
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown, generateRandomPositions]); // Dépendances stables grâce à useCallback
+  }, [handleKeyDown, generateRandomPositions]);
 
   return (
     <div className="grid grid-cols-5 gap-2 w-full max-w-md mx-auto mb-4">
