@@ -128,9 +128,13 @@ export default function GamePage() {
     }
   });
 
-  const updateTypeStats = (type: string, isCorrect: boolean) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const isCorrect = checkAnswer(problem, Number(answer));
+
+    // Update type stats for the current problem type
     setGameStats(prev => {
-      const typeKey = type as keyof typeof prev.typeStats;
+      const typeKey = problem.type as keyof typeof prev.typeStats;
       return {
         ...prev,
         totalQuestions: prev.totalQuestions + 1,
@@ -146,12 +150,6 @@ export default function GamePage() {
         }
       };
     });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const isCorrect = checkAnswer(problem, Number(answer));
-    updateTypeStats(problem.type, isCorrect);
 
     if (isCorrect) {
       setFeedback("correct");
@@ -162,24 +160,21 @@ export default function GamePage() {
 
       if (successfulProblems + 1 >= 5) {
         setCurrentLevel(prev => prev + 1);
-        setMaxLevelReached(prev => Math.max(prev, currentLevel));
+        setMaxLevelReached(prev => Math.max(prev, currentLevel + 1));
         setSuccessfulProblems(0);
       }
-
-      setTimeout(() => {
-        setProblem(generateProblem(currentLevel));
-        setAnswer("");
-        setFeedback(null);
-        setQuestionStartTime(Date.now());
-      }, 1000);
     } else {
       setFeedback("incorrect");
-      setAnswer("");
-      setTimeout(() => {
-        setFeedback(null);
-        setQuestionStartTime(Date.now());
-      }, 1000);
     }
+
+    setAnswer("");
+    setTimeout(() => {
+      setFeedback(null);
+      if (isCorrect) {
+        setProblem(generateProblem(currentLevel));
+      }
+      setQuestionStartTime(Date.now());
+    }, 1000);
   };
 
   const handleRestart = () => {
