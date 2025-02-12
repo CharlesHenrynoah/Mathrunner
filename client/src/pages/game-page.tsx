@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function GamePage() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const [answer, setAnswer] = useState("");
   const [score, setScore] = useState(0);
   const [problem, setProblem] = useState(generateProblem(user!.currentLevel));
@@ -21,8 +22,24 @@ export default function GamePage() {
   const [isActive, setIsActive] = useState(true);
   const [successfulProblems, setSuccessfulProblems] = useState(0);
 
-  const baseTime = 400; // Temps constant rapide pour tous les niveaux
-  const timePerLevel = () => baseTime; // Temps constant pour tous les niveaux
+  const baseTime = 400;
+  const timePerLevel = () => baseTime;
+
+  // Réinitialiser le jeu quand la page est chargée
+  useEffect(() => {
+    handleRestart();
+    // Nettoyage : sauvegarder le score quand l'utilisateur quitte la page
+    return () => {
+      if (score > 0) {
+        submitRecord.mutate({
+          score,
+          level: user!.currentLevel,
+          problemType: problem.type,
+          successfulProblems
+        });
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -31,7 +48,7 @@ export default function GamePage() {
     if (isActive && timeLeft > 0) {
       timer = setInterval(() => {
         const elapsedTime = (Date.now() - startTime) / 1000;
-        const slowdownFactor = 1 + (elapsedTime * 0.02); // Facteur de ralentissement uniforme
+        const slowdownFactor = 1 + (elapsedTime * 0.02);
 
         setTimeLeft((prevTime) => {
           const newTime = prevTime - (3 / slowdownFactor);
@@ -41,7 +58,7 @@ export default function GamePage() {
               score,
               level: user!.currentLevel,
               problemType: problem.type,
-              successfulProblems: successfulProblems
+              successfulProblems
             });
           }
           return newTime;
@@ -58,7 +75,6 @@ export default function GamePage() {
     },
     onSuccess: (data) => {
       if (data.leveledUp) {
-        // Réinitialiser le compteur de problèmes réussis après avoir monté de niveau
         setSuccessfulProblems(0);
       }
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
@@ -75,7 +91,6 @@ export default function GamePage() {
       setSuccessfulProblems(prev => prev + 1);
       setTimeLeft(100);
 
-      // Soumettre le record si le joueur a réussi 5 problèmes
       if (successfulProblems + 1 >= 5) {
         submitRecord.mutate({
           score,
@@ -118,9 +133,23 @@ export default function GamePage() {
             <p className="text-muted-foreground">Niveau {user?.currentLevel} ({successfulProblems}/5)</p>
           </div>
           <div className="space-x-4">
-            <Link href="/dashboard">
-              <Button variant="outline">Tableau de bord</Button>
-            </Link>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsActive(false);
+                if (score > 0) {
+                  submitRecord.mutate({
+                    score,
+                    level: user!.currentLevel,
+                    problemType: problem.type,
+                    successfulProblems
+                  });
+                }
+                navigate("/dashboard");
+              }}
+            >
+              Tableau de bord
+            </Button>
             <div className="inline-block">
               <p className="text-sm font-medium">Score</p>
               <p className="text-2xl font-bold">{score}</p>
