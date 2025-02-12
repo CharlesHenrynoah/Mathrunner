@@ -16,21 +16,11 @@ export function Runner({ onTargetReached, timeBonus = 20 }: RunnerProps) {
   const targetPosRef = useRef(targetPos);
   const gridSize = 5;
 
-  const generateRandomPositions = useCallback(() => {
-    const newRunnerPos = {
+  const generateNewTarget = useCallback(() => {
+    const newTargetPos = {
       x: Math.floor(Math.random() * gridSize),
       y: Math.floor(Math.random() * gridSize)
     };
-
-    let newTargetPos;
-    do {
-      newTargetPos = {
-        x: Math.floor(Math.random() * gridSize),
-        y: Math.floor(Math.random() * gridSize)
-      };
-    } while (newTargetPos.x === newRunnerPos.x && newTargetPos.y === newRunnerPos.y);
-
-    setRunnerPos(newRunnerPos);
     setTargetPos(newTargetPos);
     targetPosRef.current = newTargetPos;
   }, []);
@@ -56,18 +46,17 @@ export function Runner({ onTargetReached, timeBonus = 20 }: RunnerProps) {
 
       if (newPos.x === targetPosRef.current.x && newPos.y === targetPosRef.current.y) {
         onTargetReached();
-        generateRandomPositions();
+        generateNewTarget();
       }
 
       return newPos;
     });
-  }, [onTargetReached, generateRandomPositions]);
+  }, [onTargetReached, generateNewTarget]);
 
   useEffect(() => {
-    generateRandomPositions();
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown, generateRandomPositions]);
+  }, [handleKeyDown]);
 
   return (
     <div className="grid grid-cols-5 gap-2 w-full max-w-md mx-auto mb-4">
