@@ -276,15 +276,7 @@ export default function GamePage() {
         {isActive ? (
           <>
             <Runner onTargetReached={handleTargetReached} />
-            <Coach
-              gameStats={{
-                typeStats: gameStats.typeStats,
-                totalCorrect: gameStats.totalCorrect,
-                totalIncorrect: gameStats.totalIncorrect,
-                avgResponseTime: gameStats.totalResponseTime / (gameStats.totalCorrect + gameStats.totalIncorrect) || 0
-              }}
-              currentLevel={currentLevel}
-            />
+            <Coach gameStats={gameStats} currentLevel={currentLevel} />
             <Card>
               <CardContent className="p-6">
                 <form onSubmit={handleSubmit} className="space-y-4">
