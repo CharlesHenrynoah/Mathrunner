@@ -23,23 +23,43 @@ export function generateProblem(level: number): Problem {
 
   switch (operation.type) {
     case "addition":
-      a = getRandomInt(1, 10 * level);
-      b = getRandomInt(1, 10 * level);
+      if (level === 1) {
+        a = getRandomInt(1, 10);
+        b = getRandomInt(1, 10);
+      } else {
+        a = getRandomInt(10, 50);
+        b = getRandomInt(10, 50);
+      }
       answer = a + b;
       break;
     case "subtraction":
-      answer = getRandomInt(1, 10 * level);
-      b = getRandomInt(1, answer);
+      if (level === 1) {
+        answer = getRandomInt(1, 10);
+        b = getRandomInt(1, answer);
+      } else {
+        answer = getRandomInt(10, 50);
+        b = getRandomInt(1, answer);
+      }
       a = answer + b;
       break;
     case "multiplication":
-      a = getRandomInt(1, 5 * level);
-      b = getRandomInt(1, 5 * level);
+      if (level === 2) {
+        a = getRandomInt(1, 10);
+        b = getRandomInt(1, 10);
+      } else {
+        a = getRandomInt(2, 12);
+        b = getRandomInt(2, 12);
+      }
       answer = a * b;
       break;
     case "division":
-      b = getRandomInt(1, 5);
-      answer = getRandomInt(1, 5 * level);
+      if (level === 2) {
+        b = getRandomInt(1, 5);
+        answer = getRandomInt(1, 5);
+      } else {
+        b = getRandomInt(2, 10);
+        answer = getRandomInt(2, 10);
+      }
       a = b * answer;
       break;
     default:
