@@ -10,7 +10,7 @@ interface RunnerProps {
   timeBonus?: number;
 }
 
-export function Runner({ onTargetReached, timeBonus = 20 }: RunnerProps) {
+export function Runner({ onTargetReached, timeBonus = 13 }: RunnerProps) {
   const [runnerPos, setRunnerPos] = useState<Position>({ x: 0, y: 0 });
   const [targetPos, setTargetPos] = useState<Position>({ x: 2, y: 2 });
   const targetPosRef = useRef(targetPos);
