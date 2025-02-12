@@ -24,10 +24,28 @@ export default function GamePage() {
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
+    let startTime = Date.now();
+
     if (isActive && timeLeft > 0) {
       timer = setInterval(() => {
+        const elapsedTime = (Date.now() - startTime) / 1000;
+
+        // Facteur de ralentissement basé sur le niveau et le type d'opération
+        let levelFactor = 1;
+        if (user?.currentLevel === 1) {
+          levelFactor = problem.type === "addition" || problem.type === "subtraction" ? 0.5 : 1;
+        } else if (user?.currentLevel === 2) {
+          levelFactor = problem.type === "multiplication" || problem.type === "division" ? 1.2 : 0.8;
+        } else if (user?.currentLevel === 3) {
+          levelFactor = 1.5;
+        } else if (user?.currentLevel === 4) {
+          levelFactor = 2;
+        }
+
+        const slowdownFactor = 1 + (elapsedTime * 0.1 * levelFactor);
+
         setTimeLeft((prevTime) => {
-          const newTime = prevTime - 1;
+          const newTime = prevTime - (1 / slowdownFactor);
           if (newTime <= 0) {
             setIsActive(false);
             submitRecord.mutate({
@@ -41,7 +59,7 @@ export default function GamePage() {
       }, timePerLevel());
     }
     return () => clearInterval(timer);
-  }, [isActive, user?.currentLevel]);
+  }, [isActive, user?.currentLevel, problem.type]);
 
   const submitRecord = useMutation({
     mutationFn: async (data: { score: number; level: number; problemType: string }) => {
