@@ -7,9 +7,10 @@ interface Position {
 
 interface RunnerProps {
   onTargetReached: () => void;
+  timeBonus?: number;
 }
 
-export function Runner({ onTargetReached }: RunnerProps) {
+export function Runner({ onTargetReached, timeBonus = 20 }: RunnerProps) {
   const [runnerPos, setRunnerPos] = useState<Position>({ x: 0, y: 0 });
   const [targetPos, setTargetPos] = useState<Position>({ x: 2, y: 2 });
   const gridSize = 5;
@@ -33,7 +34,7 @@ export function Runner({ onTargetReached }: RunnerProps) {
   };
 
   useEffect(() => {
-    // Générer les positions initiales une seule fois au montage
+    // Générer les positions initiales au montage
     generateRandomPositions();
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -57,9 +58,8 @@ export function Runner({ onTargetReached }: RunnerProps) {
 
         // Vérifier si la cible est atteinte après le mouvement
         if (newPos.x === targetPos.x && newPos.y === targetPos.y) {
-          onTargetReached();
-          // Générer de nouvelles positions après un court délai
-          setTimeout(generateRandomPositions, 100);
+          onTargetReached(); // Appel du callback pour augmenter le temps
+          generateRandomPositions(); // Générer de nouvelles positions immédiatement
         }
 
         return newPos;
@@ -68,7 +68,7 @@ export function Runner({ onTargetReached }: RunnerProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []); 
+  }, [targetPos, onTargetReached]); // Ajouter targetPos et onTargetReached aux dépendances
 
   return (
     <div className="grid grid-cols-5 gap-2 w-full max-w-md mx-auto mb-4">
