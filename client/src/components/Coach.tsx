@@ -16,14 +16,13 @@ interface CoachProps {
 
 export function Coach({ gameStats, currentLevel }: CoachProps) {
   const [tip, setTip] = useState<string>("");
-  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const generateTip = () => {
       const tips = [];
 
       // Conseils basés sur le temps de réponse
-      const avgTime = gameStats.totalCorrect > 0 ? gameStats.avgResponseTime / gameStats.totalCorrect : 0;
+      const avgTime = gameStats.avgResponseTime;
       if (avgTime > 5) {
         tips.push("Visualisez le problème avant de répondre.");
       }
@@ -43,41 +42,35 @@ export function Coach({ gameStats, currentLevel }: CoachProps) {
 
       // Conseils basés sur le niveau
       if (currentLevel === 1 && gameStats.totalCorrect > 10) {
-        tips.push("Votre temps moyen est de 0.0s. Essayez de maintenir un rythme régulier.");
+        tips.push("Votre temps moyen est de " + avgTime.toFixed(1) + "s. Essayez de maintenir un rythme régulier.");
       }
 
       if (tips.length > 0) {
         const randomTip = tips[Math.floor(Math.random() * tips.length)];
         setTip(randomTip);
-        setIsVisible(true);
-        
-        // Cache le conseil après 5 secondes
-        setTimeout(() => {
-          setIsVisible(false);
-        }, 5000);
       }
     };
 
-    generateTip();
+    // Générer un nouveau conseil toutes les 10 secondes
+    const interval = setInterval(generateTip, 10000);
+    generateTip(); // Générer le premier conseil immédiatement
+
+    return () => clearInterval(interval);
   }, [gameStats, currentLevel]);
 
-  if (!isVisible || !tip) return null;
-
   return (
-    <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4">
-      <Card className="p-4 max-w-md bg-purple-900 text-white">
+    <div className="fixed bottom-4 right-4 z-50">
+      <Card className="p-4 max-w-md bg-purple-900 text-white shadow-lg">
         <div className="flex items-start gap-3">
           <Brain className="h-6 w-6 flex-shrink-0" />
           <div>
             <h3 className="font-semibold mb-1">Coach Cognitif</h3>
-            <p className="text-sm">{tip}</p>
+            {tip ? (
+              <p className="text-sm">{tip}</p>
+            ) : (
+              <p className="text-sm">Je suis là pour vous aider. Commencez à jouer !</p>
+            )}
           </div>
-          <button
-            onClick={() => setIsVisible(false)}
-            className="ml-auto p-1 hover:opacity-70"
-          >
-            ✕
-          </button>
         </div>
       </Card>
     </div>

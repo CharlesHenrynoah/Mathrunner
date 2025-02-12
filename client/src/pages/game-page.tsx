@@ -71,7 +71,7 @@ export default function GamePage() {
 
   const submitGameRecord = () => {
     if (score > 0) {
-      const avgResponseTime = gameStats.totalResponseTime / gameStats.totalQuestions;
+      const avgResponseTime = gameStats.totalQuestions > 0 ? gameStats.totalResponseTime / gameStats.totalQuestions : 0;
       submitRecord.mutate({
         score,
         level: maxLevelReached,
@@ -276,7 +276,16 @@ export default function GamePage() {
         {isActive ? (
           <>
             <Runner onTargetReached={handleTargetReached} />
-            <Coach gameStats={gameStats} currentLevel={currentLevel} />
+            <Coach
+              gameStats={{
+                typeStats: gameStats.typeStats,
+                totalCorrect: gameStats.totalCorrect,
+                totalIncorrect: gameStats.totalIncorrect,
+                avgResponseTime: gameStats.totalQuestions > 0 ?
+                  gameStats.totalResponseTime / gameStats.totalQuestions : 0
+              }}
+              currentLevel={currentLevel}
+            />
             <Card>
               <CardContent className="p-6">
                 <form onSubmit={handleSubmit} className="space-y-4">
