@@ -59,33 +59,35 @@ export function Runner({ onTargetReached, timeBonus = 20 }: RunnerProps) {
   }, [handleKeyDown]);
 
   return (
-    <div className="grid grid-cols-5 gap-2 w-full max-w-md mx-auto mb-4">
-      {Array.from({ length: gridSize * gridSize }).map((_, index) => {
-        const x = index % gridSize;
-        const y = Math.floor(index / gridSize);
-        const isRunner = x === runnerPos.x && y === runnerPos.y;
-        const isTarget = x === targetPos.x && y === targetPos.y;
+    <div className="flex justify-center items-center min-h-[500px] p-4">
+      <div className="grid grid-cols-5 gap-4 w-full max-w-2xl aspect-square bg-gray-50 p-6 rounded-xl shadow-lg">
+        {Array.from({ length: gridSize * gridSize }).map((_, index) => {
+          const x = index % gridSize;
+          const y = Math.floor(index / gridSize);
+          const isRunner = x === runnerPos.x && y === runnerPos.y;
+          const isTarget = x === targetPos.x && y === targetPos.y;
 
-        return (
-          <div
-            key={index}
-            className={`aspect-square rounded-lg ${
-              isRunner ? 'bg-blue-500' : isTarget ? 'bg-green-500' : 'bg-gray-100'
-            }`}
-          >
-            {isRunner && (
-              <div className="w-full h-full flex items-center justify-center">
-                🏃
-              </div>
-            )}
-            {isTarget && !isRunner && (
-              <div className="w-full h-full flex items-center justify-center">
-                🎯
-              </div>
-            )}
-          </div>
-        );
-      })}
+          return (
+            <div
+              key={index}
+              className={`aspect-square rounded-lg flex items-center justify-center text-4xl ${
+                isRunner ? 'bg-blue-500 shadow-md' : isTarget ? 'bg-green-500 shadow-md' : 'bg-white shadow-sm'
+              }`}
+            >
+              {isRunner && (
+                <div className="w-full h-full flex items-center justify-center">
+                  🏃
+                </div>
+              )}
+              {isTarget && !isRunner && (
+                <div className="w-full h-full flex items-center justify-center">
+                  🎯
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
