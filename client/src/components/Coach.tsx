@@ -32,9 +32,9 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
   const lastAnalysisTime = useRef<number>(0);
 
   const COOLDOWN_TIMES = {
-    gemini: 8000,   // 8 secondes entre les conseils Gemini
-    stats: 15000,   // 15 secondes entre les conseils basés sur les stats
-    time: 10000     // 10 secondes entre les conseils sur le temps
+    gemini: 3000,    // 3 secondes entre les conseils Gemini
+    stats: 5000,     // 5 secondes entre les conseils basés sur les stats
+    time: 4000       // 4 secondes entre les conseils sur le temps
   };
 
   const addTip = (newTip: Omit<Tip, 'id' | 'timestamp'>) => {
@@ -47,8 +47,8 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
     }
 
     setTips(prev => {
-      // Filtrer les conseils expirés (plus vieux que 30 secondes)
-      const filteredTips = prev.filter(tip => now - tip.timestamp < 30000);
+      // Filtrer les conseils expirés (plus vieux que 15 secondes)
+      const filteredTips = prev.filter(tip => now - tip.timestamp < 15000);
 
       // Vérifier si un conseil similaire existe déjà
       const hasSimilarTip = filteredTips.some(tip => 
@@ -77,56 +77,8 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
       const now = Date.now();
 
       // Éviter les analyses trop fréquentes
-      if (now - lastAnalysisTime.current < 2000) return;
+      if (now - lastAnalysisTime.current < 500) return;
       lastAnalysisTime.current = now;
-
-      // Conseil basé sur le temps restant
-      if (timeLeft < 30) {
-        const urgencyLevel = timeLeft < 15 ? 'critique' : 'important';
-        const emoji = timeLeft < 15 ? '⚡' : '⏰';
-        addTip({
-          message: `${emoji} Temps ${urgencyLevel} ! Attrapez vite un bonus pour continuer votre progression !`,
-          type: 'warning',
-          source: 'time'
-        });
-      }
-
-      // Conseils basés sur les performances
-      if (gameStats.totalQuestions >= 5) {
-        const recentAccuracy = gameStats.totalCorrect / gameStats.totalQuestions * 100;
-        const isSpeedingUp = gameStats.avgResponseTime < 3;
-        const hasHighErrorRate = gameStats.totalIncorrect > gameStats.totalCorrect * 0.3;
-
-        if (isSpeedingUp && hasHighErrorRate) {
-          addTip({
-            message: "🎯 Super vitesse, mais prenez une micro-pause pour vérifier. La précision est clé !",
-            type: 'warning',
-            source: 'stats'
-          });
-        }
-
-        // Analyse des points faibles
-        const weakestType = Object.entries(gameStats.typeStats)
-          .filter(([_, stats]) => stats.total >= 3)
-          .sort(([_, a], [__, b]) => (a.correct / a.total) - (b.correct / b.total))[0];
-
-        if (weakestType && (weakestType[1].correct / weakestType[1].total) < 0.6) {
-          const tips = {
-            addition: "➕ Astuce : groupez les chiffres par dizaines pour additionner plus vite !",
-            subtraction: "➖ Visualisez une ligne de nombres pour mieux soustraire.",
-            multiplication: "✖️ Utilisez les tables proches que vous connaissez bien !",
-            division: "➗ Pensez à la division comme un partage équitable.",
-            power: "🔢 Décomposez étape par étape pour les puissances.",
-            algebra: "🔤 Isolez x en faisant la même chose des deux côtés !"
-          };
-
-          addTip({
-            message: tips[weakestType[0] as keyof typeof tips] || `Concentrez-vous sur les ${weakestType[0]}.`,
-            type: 'info',
-            source: 'stats'
-          });
-        }
-      }
 
       // Analyse d'écran via Gemini pour des conseils contextuels
       try {
@@ -136,13 +88,61 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
           source: 'gemini'
         });
       } catch (error) {
-        // Si l'analyse échoue, on continue silencieusement
+        // Si l'analyse échoue, on passe aux autres types de conseils
         console.error('Failed to get screen analysis:', error);
+
+        // Conseil basé sur le temps restant
+        if (timeLeft < 30) {
+          const urgencyLevel = timeLeft < 15 ? 'critique' : 'important';
+          const emoji = timeLeft < 15 ? '⚡' : '⏰';
+          addTip({
+            message: `${emoji} Temps ${urgencyLevel} ! Attrapez vite un bonus pour continuer !`,
+            type: 'warning',
+            source: 'time'
+          });
+        }
+
+        // Conseils basés sur les performances récentes
+        if (gameStats.totalQuestions > 0) {
+          const recentAccuracy = gameStats.totalCorrect / gameStats.totalQuestions * 100;
+          const isSpeedingUp = gameStats.avgResponseTime < 3;
+          const hasHighErrorRate = gameStats.totalIncorrect > gameStats.totalCorrect * 0.3;
+
+          if (isSpeedingUp && hasHighErrorRate) {
+            addTip({
+              message: "🎯 Bonne vitesse ! Une micro-pause pour vérifier et c'est parfait !",
+              type: 'warning',
+              source: 'stats'
+            });
+          }
+
+          // Analyse du type d'opération actuel
+          const weakestType = Object.entries(gameStats.typeStats)
+            .filter(([_, stats]) => stats.total >= 2) // Réduit le seuil à 2 tentatives
+            .sort(([_, a], [__, b]) => (a.correct / a.total) - (b.correct / b.total))[0];
+
+          if (weakestType && (weakestType[1].correct / weakestType[1].total) < 0.7) {
+            const tips = {
+              addition: "➕ Groupez par dizaines pour aller plus vite !",
+              subtraction: "➖ Visualisez la ligne des nombres !",
+              multiplication: "✖️ Utilisez une table proche !",
+              division: "➗ Partagez en parts égales !",
+              power: "🔢 Décomposez par étapes !",
+              algebra: "🔤 Isolez x des deux côtés !"
+            };
+
+            addTip({
+              message: tips[weakestType[0] as keyof typeof tips] || `Focus sur les ${weakestType[0]} !`,
+              type: 'info',
+              source: 'stats'
+            });
+          }
+        }
       }
     };
 
-    const interval = setInterval(generateTip, 2000);
-    generateTip();
+    const interval = setInterval(generateTip, 500); // Analyse toutes les 0.5 secondes
+    generateTip(); // Premier appel immédiat
 
     return () => clearInterval(interval);
   }, [gameStats, currentLevel, timeLeft]);
