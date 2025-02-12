@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { GameRecord, GameStats } from "@shared/schema";
+import { GameStats } from "@shared/schema";
 import { format } from "date-fns";
 import { Loader2, Trophy, Star, Activity, Brain, Clock, Target } from "lucide-react";
 
@@ -57,7 +57,7 @@ export default function DashboardPage() {
               <Trophy className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.bestScore}</div>
+              <div className="text-2xl font-bold">{stats?.bestScore ?? 0}</div>
             </CardContent>
           </Card>
           <Card>
@@ -66,7 +66,7 @@ export default function DashboardPage() {
               <Star className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.avgScore}</div>
+              <div className="text-2xl font-bold">{stats?.avgScore ?? 0}</div>
             </CardContent>
           </Card>
           <Card>
@@ -75,7 +75,7 @@ export default function DashboardPage() {
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.overallAccuracy}%</div>
+              <div className="text-2xl font-bold">{stats?.overallAccuracy ?? 0}%</div>
             </CardContent>
           </Card>
           <Card>
@@ -84,7 +84,9 @@ export default function DashboardPage() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.avgResponseTime.toFixed(2)}s</div>
+              <div className="text-2xl font-bold">
+                {stats?.avgResponseTime ? stats.avgResponseTime.toFixed(2) : "0.00"}s
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -107,7 +109,7 @@ export default function DashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Object.entries(stats?.typeStats || {}).map(([type, data]) => (
+                  {Object.entries(stats?.typeStats ?? {}).map(([type, data]) => (
                     <TableRow key={type}>
                       <TableCell className="font-medium capitalize">{type}</TableCell>
                       <TableCell>{data.correct}</TableCell>
@@ -129,27 +131,29 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Score</p>
-                  <p className="text-2xl font-bold">{stats?.lastGame.score}</p>
+                  <p className="text-2xl font-bold">{stats?.lastGame?.score ?? 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Niveau atteint</p>
-                  <p className="text-2xl font-bold">{stats?.lastGame.level}</p>
+                  <p className="text-2xl font-bold">{stats?.lastGame?.level ?? 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Questions correctes</p>
-                  <p className="text-2xl font-bold">{stats?.lastGame.correct}</p>
+                  <p className="text-2xl font-bold">{stats?.lastGame?.correct ?? 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Questions incorrectes</p>
-                  <p className="text-2xl font-bold">{stats?.lastGame.incorrect}</p>
+                  <p className="text-2xl font-bold">{stats?.lastGame?.incorrect ?? 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Temps moyen de réponse</p>
-                  <p className="text-2xl font-bold">{stats?.lastGame.responseTime.toFixed(2)}s</p>
+                  <p className="text-2xl font-bold">
+                    {stats?.lastGame?.responseTime ? stats.lastGame.responseTime.toFixed(2) : "0.00"}s
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Meilleur type</p>
-                  <p className="text-2xl font-bold capitalize">{stats?.lastGame.bestType}</p>
+                  <p className="text-2xl font-bold capitalize">{stats?.lastGame?.bestType ?? "-"}</p>
                 </div>
               </div>
             </CardContent>
