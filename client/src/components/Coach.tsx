@@ -22,20 +22,29 @@ interface Tip {
   message: string;
   type: 'info' | 'warning' | 'success';
   timestamp: number;
+  source: 'gemini' | 'stats' | 'time';
 }
 
 export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
   const [tips, setTips] = useState<Tip[]>([]);
   const [isVisible, setIsVisible] = useState(true);
-  const [lastTipTypes, setLastTipTypes] = useState<Set<string>>(new Set());
-  const analysisInterval = useRef<NodeJS.Timeout>();
+  const lastTipTimestamps = useRef<Record<string, number>>({});
   const lastAnalysisTime = useRef<number>(0);
 
-  const COOLDOWN_TIME = 10000; // 10 secondes entre les conseils similaires
-  const MAX_TIPS = 3;
+  const COOLDOWN_TIMES = {
+    gemini: 8000,   // 8 secondes entre les conseils Gemini
+    stats: 15000,   // 15 secondes entre les conseils basés sur les stats
+    time: 10000     // 10 secondes entre les conseils sur le temps
+  };
 
   const addTip = (newTip: Omit<Tip, 'id' | 'timestamp'>) => {
     const now = Date.now();
+    const lastTipTime = lastTipTimestamps.current[newTip.source] || 0;
+
+    // Vérifier le cooldown par source
+    if (now - lastTipTime < COOLDOWN_TIMES[newTip.source]) {
+      return;
+    }
 
     setTips(prev => {
       // Filtrer les conseils expirés (plus vieux que 30 secondes)
@@ -44,10 +53,13 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
       // Vérifier si un conseil similaire existe déjà
       const hasSimilarTip = filteredTips.some(tip => 
         tip.message === newTip.message || 
-        (now - tip.timestamp < COOLDOWN_TIME && tip.type === newTip.type)
+        (tip.source === newTip.source && now - tip.timestamp < COOLDOWN_TIMES[newTip.source])
       );
 
       if (hasSimilarTip) return filteredTips;
+
+      // Mettre à jour le timestamp du dernier conseil de cette source
+      lastTipTimestamps.current[newTip.source] = now;
 
       const tipWithMeta = {
         ...newTip,
@@ -55,7 +67,8 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
         timestamp: now
       };
 
-      return [...filteredTips, tipWithMeta].slice(-MAX_TIPS);
+      // Garder uniquement les 3 derniers conseils
+      return [...filteredTips, tipWithMeta].slice(-3);
     });
   };
 
@@ -67,92 +80,71 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
       if (now - lastAnalysisTime.current < 2000) return;
       lastAnalysisTime.current = now;
 
-      // Score de précision actuel
-      const accuracy = gameStats.totalQuestions > 0 
-        ? (gameStats.totalCorrect / gameStats.totalQuestions) * 100
-        : 100;
-
-      // Performances par type d'opération
-      const weakestOperations = Object.entries(gameStats.typeStats)
-        .filter(([_, stats]) => stats.total >= 3)
-        .sort(([_, a], [__, b]) => (a.correct / a.total) - (b.correct / b.total))
-        .slice(0, 2);
-
-      // Analyse du temps de réponse
-      const isResponseTimeSlow = gameStats.avgResponseTime > 5;
-      const isResponseTimeFast = gameStats.avgResponseTime < 2;
-      const hasHighErrorRate = gameStats.totalIncorrect > gameStats.totalCorrect * 0.3;
-
-      // Conseils basés sur l'analyse en temps réel
-      if (timeLeft < 30 && !lastTipTypes.has('time')) {
+      // Conseil basé sur le temps restant
+      if (timeLeft < 30) {
+        const urgencyLevel = timeLeft < 15 ? 'critique' : 'important';
+        const emoji = timeLeft < 15 ? '⚡' : '⏰';
         addTip({
-          message: "🏃‍♂️ Attrapez vite le bonus de temps pour ne pas perdre votre progression !",
-          type: 'warning'
+          message: `${emoji} Temps ${urgencyLevel} ! Attrapez vite un bonus pour continuer votre progression !`,
+          type: 'warning',
+          source: 'time'
         });
-        setLastTipTypes(prev => new Set([...prev, 'time']));
       }
 
-      if (isResponseTimeSlow && !lastTipTypes.has('slow')) {
-        addTip({
-          message: "💭 Visualisez mentalement le calcul avant de répondre pour gagner en rapidité.",
-          type: 'info'
-        });
-        setLastTipTypes(prev => new Set([...prev, 'slow']));
-      }
+      // Conseils basés sur les performances
+      if (gameStats.totalQuestions >= 5) {
+        const recentAccuracy = gameStats.totalCorrect / gameStats.totalQuestions * 100;
+        const isSpeedingUp = gameStats.avgResponseTime < 3;
+        const hasHighErrorRate = gameStats.totalIncorrect > gameStats.totalCorrect * 0.3;
 
-      if (isResponseTimeFast && hasHighErrorRate && !lastTipTypes.has('fast')) {
-        addTip({
-          message: "⚡ Votre vitesse est impressionnante ! Prenez une fraction de seconde pour vérifier.",
-          type: 'warning'
-        });
-        setLastTipTypes(prev => new Set([...prev, 'fast']));
-      }
+        if (isSpeedingUp && hasHighErrorRate) {
+          addTip({
+            message: "🎯 Super vitesse, mais prenez une micro-pause pour vérifier. La précision est clé !",
+            type: 'warning',
+            source: 'stats'
+          });
+        }
 
-      // Conseils sur les types d'opérations faibles
-      weakestOperations.forEach(([type, stats]) => {
-        if (stats.total >= 3 && (stats.correct / stats.total) < 0.6 && !lastTipTypes.has(type)) {
+        // Analyse des points faibles
+        const weakestType = Object.entries(gameStats.typeStats)
+          .filter(([_, stats]) => stats.total >= 3)
+          .sort(([_, a], [__, b]) => (a.correct / a.total) - (b.correct / b.total))[0];
+
+        if (weakestType && (weakestType[1].correct / weakestType[1].total) < 0.6) {
           const tips = {
-            addition: "➕ Décomposez les grands nombres en plus petits pour faciliter l'addition.",
-            subtraction: "➖ Visualisez une ligne numérique pour mieux comprendre la soustraction.",
-            multiplication: "✖️ Utilisez les tables que vous connaissez déjà comme points de repère.",
-            division: "➗ Pensez à la division comme à un partage en parts égales.",
-            power: "🔢 Décomposez la puissance en multiplications successives.",
-            algebra: "🔤 Isolez l'inconnue en effectuant les mêmes opérations des deux côtés."
+            addition: "➕ Astuce : groupez les chiffres par dizaines pour additionner plus vite !",
+            subtraction: "➖ Visualisez une ligne de nombres pour mieux soustraire.",
+            multiplication: "✖️ Utilisez les tables proches que vous connaissez bien !",
+            division: "➗ Pensez à la division comme un partage équitable.",
+            power: "🔢 Décomposez étape par étape pour les puissances.",
+            algebra: "🔤 Isolez x en faisant la même chose des deux côtés !"
           };
 
           addTip({
-            message: tips[type as keyof typeof tips] || `Prenez votre temps sur les ${type}.`,
-            type: 'info'
+            message: tips[weakestType[0] as keyof typeof tips] || `Concentrez-vous sur les ${weakestType[0]}.`,
+            type: 'info',
+            source: 'stats'
           });
-          setLastTipTypes(prev => new Set([...prev, type]));
         }
-      });
+      }
 
       // Analyse d'écran via Gemini pour des conseils contextuels
       try {
         const analysis = await captureAndAnalyzeScreen();
-        if (analysis.message && !lastTipTypes.has('screen')) {
-          addTip(analysis);
-          setLastTipTypes(prev => new Set([...prev, 'screen']));
-        }
+        addTip({
+          ...analysis,
+          source: 'gemini'
+        });
       } catch (error) {
+        // Si l'analyse échoue, on continue silencieusement
         console.error('Failed to get screen analysis:', error);
       }
-
-      // Réinitialiser les types de conseils après un certain temps
-      setTimeout(() => {
-        setLastTipTypes(new Set());
-      }, COOLDOWN_TIME);
     };
 
-    analysisInterval.current = setInterval(generateTip, 2000);
+    const interval = setInterval(generateTip, 2000);
     generateTip();
 
-    return () => {
-      if (analysisInterval.current) {
-        clearInterval(analysisInterval.current);
-      }
-    };
+    return () => clearInterval(interval);
   }, [gameStats, currentLevel, timeLeft]);
 
   if (!isVisible) {
@@ -161,7 +153,7 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
         className="fixed bottom-4 right-4 z-50 cursor-pointer"
         onClick={() => setIsVisible(true)}
       >
-        <div className="bg-purple-900 text-white p-3 rounded-full shadow-lg">
+        <div className="bg-purple-900 text-white p-3 rounded-full shadow-lg hover:bg-purple-800 transition-colors">
           <Brain className="h-6 w-6" />
         </div>
       </div>
@@ -175,10 +167,10 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
           <Brain className="h-6 w-6 flex-shrink-0" />
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">Coach Cognitif</h3>
+              <h3 className="font-semibold">Coach Personnel</h3>
               <button
                 onClick={() => setIsVisible(false)}
-                className="text-white/70 hover:text-white"
+                className="text-white/70 hover:text-white transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -188,7 +180,7 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
                 tips.map(tip => (
                   <div
                     key={tip.id}
-                    className={`p-2 rounded-md ${
+                    className={`p-2 rounded-md animate-in fade-in slide-in-from-right-5 ${
                       tip.type === 'warning' ? 'bg-yellow-500/20' :
                       tip.type === 'success' ? 'bg-green-500/20' :
                       'bg-blue-500/20'
@@ -198,7 +190,7 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
                   </div>
                 ))
               ) : (
-                <p className="text-sm">Concentrez-vous, je vous guide ! 🎯</p>
+                <p className="text-sm">Je suis là pour vous guider, concentrez-vous ! 🎯</p>
               )}
             </div>
           </div>

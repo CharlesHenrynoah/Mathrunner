@@ -8,12 +8,12 @@ interface GeminiAnalysis {
 export async function captureAndAnalyzeScreen(): Promise<GeminiAnalysis> {
   try {
     // Capture l'écran du jeu
-    const gameElement = document.querySelector('#game-container');
+    const gameElement = document.getElementById('game-container');
     if (!gameElement) {
       throw new Error('Game container not found');
     }
 
-    const canvas = await html2canvas(gameElement);
+    const canvas = await html2canvas(gameElement as HTMLElement);
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
 
     // Prépare les données pour Gemini
@@ -33,32 +33,53 @@ export async function captureAndAnalyzeScreen(): Promise<GeminiAnalysis> {
               }
             },
             {
-              text: "Analyze this math game screenshot and provide a short coaching tip in French. Focus on the player's performance, time management, and current game state. Keep the response under 100 characters."
+              text: `Analyse cette capture d'écran du jeu de mathématiques et fournis un conseil personnalisé en français.
+              Concentre-toi sur:
+              - Le niveau de difficulté actuel et la progression
+              - Le type d'opération mathématique affiché
+              - Le temps restant et l'urgence de la situation
+              - L'état émotionnel suggéré par les réponses précédentes
+
+              Sois encourageant mais direct. Utilise un ton naturel et amical.
+              Limite ta réponse à 100 caractères.
+              Ajoute un emoji pertinent au début de ta réponse.`
             }
           ]
         }]
       })
     });
 
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
     const data = await response.json();
+
+    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      throw new Error('Invalid API response format');
+    }
+
     const analysis = data.candidates[0].content.parts[0].text;
 
-    // Détermine le type de message basé sur le contenu
-    const type = analysis.toLowerCase().includes('attention') || analysis.toLowerCase().includes('attention') 
-      ? 'warning'
-      : analysis.toLowerCase().includes('bravo') || analysis.toLowerCase().includes('excellent')
-      ? 'success'
-      : 'info';
+    // Détermine le type de message basé sur le contenu et la situation
+    let type: 'info' | 'warning' | 'success' = 'info';
+
+    if (analysis.toLowerCase().includes('attention') || 
+        analysis.toLowerCase().includes('vite') || 
+        analysis.toLowerCase().includes('urgent')) {
+      type = 'warning';
+    } else if (analysis.toLowerCase().includes('bravo') || 
+               analysis.toLowerCase().includes('excellent') ||
+               analysis.toLowerCase().includes('super')) {
+      type = 'success';
+    }
 
     return {
-      message: analysis,
+      message: analysis.trim(),
       type
     };
   } catch (error) {
     console.error('Error analyzing screen:', error);
-    return {
-      message: "Concentrez-vous sur votre rythme et votre précision.",
-      type: 'info'
-    };
+    throw error; // Propager l'erreur pour la gérer dans le composant Coach
   }
 }
