@@ -21,8 +21,8 @@ export default function GamePage() {
   const [isActive, setIsActive] = useState(true);
   const [successfulProblems, setSuccessfulProblems] = useState(0);
 
-  const baseTime = 400;
-  const timePerLevel = () => Math.max(baseTime - (user!.currentLevel * 20), 200);
+  const baseTime = 400; // Temps constant rapide pour tous les niveaux
+  const timePerLevel = () => baseTime; // Temps constant pour tous les niveaux
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -31,19 +31,7 @@ export default function GamePage() {
     if (isActive && timeLeft > 0) {
       timer = setInterval(() => {
         const elapsedTime = (Date.now() - startTime) / 1000;
-
-        let levelFactor = 1;
-        if (user?.currentLevel === 1) {
-          levelFactor = problem.type === "addition" || problem.type === "subtraction" ? 0.2 : 0.3;
-        } else if (user?.currentLevel === 2) {
-          levelFactor = problem.type === "multiplication" || problem.type === "division" ? 0.4 : 0.3;
-        } else if (user?.currentLevel === 3) {
-          levelFactor = 0.6;
-        } else if (user?.currentLevel === 4) {
-          levelFactor = 0.8;
-        }
-
-        const slowdownFactor = 1 + (elapsedTime * 0.02 * levelFactor);
+        const slowdownFactor = 1 + (elapsedTime * 0.02); // Facteur de ralentissement uniforme
 
         setTimeLeft((prevTime) => {
           const newTime = prevTime - (3 / slowdownFactor);
@@ -60,7 +48,7 @@ export default function GamePage() {
       }, timePerLevel());
     }
     return () => clearInterval(timer);
-  }, [isActive, user?.currentLevel, problem.type]);
+  }, [isActive, problem.type]);
 
   const submitRecord = useMutation({
     mutationFn: async (data: { score: number; level: number; problemType: string }) => {
