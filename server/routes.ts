@@ -15,25 +15,59 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/game/record", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
-    const { score, level, problemType, successfulProblems } = req.body;
+    const {
+      score,
+      level,
+      problemType,
+      totalQuestions,
+      totalCorrect,
+      totalIncorrect,
+      avgResponseTime,
+      additionCorrect,
+      additionTotal,
+      subtractionCorrect,
+      subtractionTotal,
+      multiplicationCorrect,
+      multiplicationTotal,
+      divisionCorrect,
+      divisionTotal,
+      powerCorrect,
+      powerTotal,
+      algebraCorrect,
+      algebraTotal
+    } = req.body;
+
     const gameRecord = await storage.addGameRecord({
       userId: req.user.id,
       score,
       level,
-      problemType
+      problemType,
+      totalQuestions,
+      totalCorrect,
+      totalIncorrect,
+      avgResponseTime,
+      additionCorrect,
+      additionTotal,
+      subtractionCorrect,
+      subtractionTotal,
+      multiplicationCorrect,
+      multiplicationTotal,
+      divisionCorrect,
+      divisionTotal,
+      powerCorrect,
+      powerTotal,
+      algebraCorrect,
+      algebraTotal
     });
 
-    // Si l'utilisateur a réussi 5 problèmes, on augmente son niveau
-    const shouldLevelUp = successfulProblems >= 5;
-    const newLevel = shouldLevelUp ? Math.min(level + 1, 4) : level;
-
-    const updatedUser = await storage.updateUserStats(req.user.id, score, newLevel);
+    // Update user stats with the new game data
+    const updatedUser = await storage.updateUserStats(req.user.id, score, level);
     req.login(updatedUser, (err) => {
       if (err) return res.status(500).send(err.message);
-      res.json({ 
+      res.json({
         gameRecord,
-        leveledUp: shouldLevelUp,
-        newLevel
+        leveledUp: false,
+        newLevel: level
       });
     });
   });
