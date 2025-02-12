@@ -52,7 +52,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Niveau actuel</CardTitle>
+              <CardTitle className="text-sm font-medium">Niveau le plus élevé</CardTitle>
               <Trophy className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -70,7 +70,7 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Parties jouées</CardTitle>
+              <CardTitle className="text-sm font-medium">Nombre de parties</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -88,9 +88,9 @@ export default function DashboardPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  <TableHead>Types de problèmes</TableHead>
-                  <TableHead>Niveau max</TableHead>
-                  <TableHead>Score</TableHead>
+                  <TableHead>Types de problèmes rencontrés</TableHead>
+                  <TableHead>Niveau max atteint</TableHead>
+                  <TableHead>Score de la partie</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
