@@ -22,20 +22,20 @@ export default function GamePage() {
   const [timeLeft, setTimeLeft] = useState(100);
   const [isActive, setIsActive] = useState(true);
   const [successfulProblems, setSuccessfulProblems] = useState(0);
+  const [maxLevelReached, setMaxLevelReached] = useState(0);
+  const [problemTypes, setProblemTypes] = useState(new Set<string>());
 
   const baseTime = 400;
   const timePerLevel = () => baseTime;
 
-  // Réinitialiser le jeu quand la page est chargée
   useEffect(() => {
     handleRestart();
-    // Nettoyage : sauvegarder le score quand l'utilisateur quitte la page
     return () => {
       if (score > 0) {
         submitRecord.mutate({
           score,
-          level: user!.currentLevel,
-          problemType: problem.type,
+          level: maxLevelReached,
+          problemType: Array.from(problemTypes).join(', '),
           successfulProblems
         });
       }
@@ -57,8 +57,8 @@ export default function GamePage() {
             setIsActive(false);
             submitRecord.mutate({
               score,
-              level: user!.currentLevel,
-              problemType: problem.type,
+              level: maxLevelReached,
+              problemType: Array.from(problemTypes).join(', '),
               successfulProblems
             });
           }
@@ -67,7 +67,7 @@ export default function GamePage() {
       }, timePerLevel());
     }
     return () => clearInterval(timer);
-  }, [isActive, problem.type, successfulProblems]);
+  }, [isActive, maxLevelReached, problemTypes, successfulProblems]);
 
   const submitRecord = useMutation({
     mutationFn: async (data: { score: number; level: number; problemType: string; successfulProblems: number }) => {
@@ -75,11 +75,12 @@ export default function GamePage() {
       return res.json();
     },
     onSuccess: (data) => {
-      // Reset level to 0 after submitting score
       if (user) {
         user.currentLevel = 0;
       }
       setSuccessfulProblems(0);
+      setMaxLevelReached(0);
+      setProblemTypes(new Set());
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     }
@@ -92,13 +93,15 @@ export default function GamePage() {
       setFeedback("correct");
       setScore(score + 10);
       setSuccessfulProblems(prev => prev + 1);
+      setMaxLevelReached(Math.max(maxLevelReached, user!.currentLevel));
+      setProblemTypes(prev => new Set(prev).add(problem.type));
       setTimeLeft(100);
 
       if (successfulProblems + 1 >= 5) {
         submitRecord.mutate({
           score,
-          level: user!.currentLevel,
-          problemType: problem.type,
+          level: maxLevelReached,
+          problemType: Array.from(problemTypes).join(', '),
           successfulProblems: successfulProblems + 1
         });
       }
@@ -122,10 +125,12 @@ export default function GamePage() {
     setTimeLeft(100);
     setIsActive(true);
     setSuccessfulProblems(0);
+    setMaxLevelReached(0);
+    setProblemTypes(new Set());
     if (user) {
       user.currentLevel = 0;
     }
-    setProblem(generateProblem(0)); // Start at level 0
+    setProblem(generateProblem(0)); 
     setAnswer("");
     setFeedback(null);
   };
@@ -140,7 +145,9 @@ export default function GamePage() {
         <div className="flex justify-between items-center">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold">Math Runner</h1>
-            <p className="text-muted-foreground">Niveau {user?.currentLevel} ({successfulProblems}/5)</p>
+            <p className="text-muted-foreground">
+              Niveau actuel : {user?.currentLevel} ({successfulProblems}/5)
+            </p>
           </div>
           <div className="space-x-4">
             <Button 
@@ -150,8 +157,8 @@ export default function GamePage() {
                 if (score > 0) {
                   submitRecord.mutate({
                     score,
-                    level: user!.currentLevel,
-                    problemType: problem.type,
+                    level: maxLevelReached,
+                    problemType: Array.from(problemTypes).join(', '),
                     successfulProblems
                   });
                 }

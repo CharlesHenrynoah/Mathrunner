@@ -34,17 +34,17 @@ export default function DashboardPage() {
     <div className="min-h-screen p-8 bg-background">
       <div className="max-w-6xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <h1 className="text-3xl font-bold">Tableau de bord</h1>
           <div className="space-x-4">
             <Link href="/">
-              <Button variant="outline">Play Game</Button>
+              <Button variant="outline">Jouer</Button>
             </Link>
             <Button
               variant="destructive"
               onClick={() => logoutMutation.mutate()}
               disabled={logoutMutation.isPending}
             >
-              Logout
+              Déconnexion
             </Button>
           </div>
         </div>
@@ -52,7 +52,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Level</CardTitle>
+              <CardTitle className="text-sm font-medium">Niveau actuel</CardTitle>
               <Trophy className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -61,7 +61,7 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Best Score</CardTitle>
+              <CardTitle className="text-sm font-medium">Meilleur score</CardTitle>
               <Star className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -70,7 +70,7 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Games Played</CardTitle>
+              <CardTitle className="text-sm font-medium">Parties jouées</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -81,15 +81,15 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recent Games</CardTitle>
+            <CardTitle>Historique des parties</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  <TableHead>Problem Type</TableHead>
-                  <TableHead>Level</TableHead>
+                  <TableHead>Types de problèmes</TableHead>
+                  <TableHead>Niveau max</TableHead>
                   <TableHead>Score</TableHead>
                 </TableRow>
               </TableHeader>
@@ -97,7 +97,7 @@ export default function DashboardPage() {
                 {stats?.slice(0, 10).map((record) => (
                   <TableRow key={record.id}>
                     <TableCell>
-                      {format(new Date(record.createdAt), "MMM d, yyyy HH:mm")}
+                      {format(new Date(record.createdAt), "dd/MM/yyyy HH:mm")}
                     </TableCell>
                     <TableCell className="capitalize">{record.problemType}</TableCell>
                     <TableCell>{record.level}</TableCell>
