@@ -136,6 +136,8 @@ export default function GamePage() {
     // Mise à jour des statistiques pour le type de problème actuel
     setStatsJeu(prev => {
       const typeKey = probleme.type as keyof typeof prev.typeStats;
+      const typeStats = prev.typeStats[typeKey] || { correctes: 0, total: 0 };
+
       return {
         ...prev,
         totalQuestions: prev.totalQuestions + 1,
@@ -145,8 +147,8 @@ export default function GamePage() {
         typeStats: {
           ...prev.typeStats,
           [typeKey]: {
-            correctes: prev.typeStats[typeKey].correctes + (estCorrect ? 1 : 0),
-            total: prev.typeStats[typeKey].total + 1
+            correctes: typeStats.correctes + (estCorrect ? 1 : 0),
+            total: typeStats.total + 1
           }
         }
       };
