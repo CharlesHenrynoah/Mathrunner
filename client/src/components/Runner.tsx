@@ -68,7 +68,7 @@ export function Runner({ onTargetReached }: RunnerProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [targetPos.x, targetPos.y, onTargetReached]); // Dépendances nécessaires
+  }, []); // Supprimer les dépendances pour éviter les re-rendus inutiles
 
   return (
     <div className="grid grid-cols-5 gap-2 w-full max-w-md mx-auto mb-4">
