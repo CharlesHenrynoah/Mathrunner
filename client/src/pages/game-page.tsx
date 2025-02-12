@@ -285,6 +285,7 @@ export default function GamePage() {
                   gameStats.totalResponseTime / gameStats.totalQuestions : 0
               }}
               currentLevel={currentLevel}
+              timeLeft={timeLeft}
             />
             <Card>
               <CardContent className="p-6">
