@@ -217,7 +217,7 @@ export default function GamePage() {
   };
 
   return (
-    <div className="min-h-screen p-8 bg-background">
+    <div className="min-h-screen p-8 bg-background" id="game-container">
       <div className="max-w-2xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <div className="space-y-1">

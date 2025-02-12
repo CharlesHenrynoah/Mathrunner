@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Brain, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { captureAndAnalyzeScreen } from "@/lib/screen-analysis";
 
 interface CoachProps {
   gameStats: {
@@ -10,7 +11,7 @@ interface CoachProps {
     totalCorrect: number;
     totalIncorrect: number;
     avgResponseTime: number;
-    totalQuestions: number; // Added to track total questions
+    totalQuestions: number;
   };
   currentLevel: number;
   timeLeft: number;
@@ -25,10 +26,22 @@ interface Tip {
 export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
   const [tips, setTips] = useState<Tip[]>([]);
   const [isVisible, setIsVisible] = useState(true);
+  const analysisInterval = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    const generateTip = () => {
+    const generateTip = async () => {
       const newTips: Tip[] = [];
+
+      // Obtenir l'analyse de l'écran via Gemini
+      try {
+        const analysis = await captureAndAnalyzeScreen();
+        newTips.push({
+          id: Date.now(),
+          ...analysis
+        });
+      } catch (error) {
+        console.error('Failed to get screen analysis:', error);
+      }
 
       // Conseils basés sur le temps de réponse
       const avgTime = gameStats.avgResponseTime;
@@ -92,14 +105,19 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
       }
 
       if (newTips.length > 0) {
-        setTips(prev => [...prev, ...newTips].slice(-3)); // Garde seulement les 3 derniers conseils
+        setTips(prev => [...prev, ...newTips].slice(-3));
       }
     };
 
-    const interval = setInterval(generateTip, 10000);
+    // Analyser l'écran toutes les secondes
+    analysisInterval.current = setInterval(generateTip, 1000);
     generateTip();
 
-    return () => clearInterval(interval);
+    return () => {
+      if (analysisInterval.current) {
+        clearInterval(analysisInterval.current);
+      }
+    };
   }, [gameStats, currentLevel, timeLeft]);
 
   if (!isVisible) {
