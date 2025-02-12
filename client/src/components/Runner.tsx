@@ -59,8 +59,8 @@ export function Runner({ onTargetReached, timeBonus = 20 }: RunnerProps) {
   }, [handleKeyDown]);
 
   return (
-    <div className="flex justify-center items-center min-h-[500px] p-4">
-      <div className="grid grid-cols-5 gap-4 w-full max-w-2xl aspect-square bg-gray-50 p-6 rounded-xl shadow-lg">
+    <div className="flex justify-center items-center min-h-[200px] p-2">
+      <div className="grid grid-cols-5 gap-1 w-full max-w-md aspect-square bg-gray-50 p-2 rounded-lg shadow-sm">
         {Array.from({ length: gridSize * gridSize }).map((_, index) => {
           const x = index % gridSize;
           const y = Math.floor(index / gridSize);
@@ -70,8 +70,8 @@ export function Runner({ onTargetReached, timeBonus = 20 }: RunnerProps) {
           return (
             <div
               key={index}
-              className={`aspect-square rounded-lg flex items-center justify-center text-4xl ${
-                isRunner ? 'bg-blue-500 shadow-md' : isTarget ? 'bg-green-500 shadow-md' : 'bg-white shadow-sm'
+              className={`aspect-square rounded-sm flex items-center justify-center text-2xl ${
+                isRunner ? 'bg-blue-500 shadow-sm' : isTarget ? 'bg-green-500 shadow-sm' : 'bg-white'
               }`}
             >
               {isRunner && (
