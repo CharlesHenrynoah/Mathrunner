@@ -108,7 +108,7 @@ export function Coach({ statsJeu, niveauActuel, tempsRestant }: PropsCoach) {
             multiplication: "✖️ Table proche = repère !",
             division: "➗ Parts égales !",
             puissance: "🔢 Étape par étape !",
-            algebra: "🔤 Isolez x !"
+            algebre: "🔤 Isolez x !"
           };
 
           ajouterConseil({

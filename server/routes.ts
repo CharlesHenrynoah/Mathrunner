@@ -28,7 +28,7 @@ export function registerRoutes(app: Express): Server {
           multiplication: { correctes: 0, total: 0, precision: 0 },
           division: { correctes: 0, total: 0, precision: 0 },
           puissance: { correctes: 0, total: 0, precision: 0 },
-          algebra: { correctes: 0, total: 0, precision: 0 }
+          algebre: { correctes: 0, total: 0, precision: 0 }
         },
         dernièrePartie: {
           score: 0,
@@ -59,7 +59,7 @@ export function registerRoutes(app: Express): Server {
       multiplication: { correctes: 0, total: 0, precision: 0 },
       division: { correctes: 0, total: 0, precision: 0 },
       puissance: { correctes: 0, total: 0, precision: 0 },
-      algebra: { correctes: 0, total: 0, precision: 0 }
+      algebre: { correctes: 0, total: 0, precision: 0 }
     };
 
     enregistrements.forEach(enregistrement => {
@@ -73,8 +73,8 @@ export function registerRoutes(app: Express): Server {
       statsParType.division.total += enregistrement.divisionTotal;
       statsParType.puissance.correctes += enregistrement.puissanceCorrectes;
       statsParType.puissance.total += enregistrement.puissanceTotal;
-      statsParType.algebra.correctes += enregistrement.algebraCorrectes;
-      statsParType.algebra.total += enregistrement.algebraTotal;
+      statsParType.algebre.correctes += enregistrement.algebraCorrectes;
+      statsParType.algebre.total += enregistrement.algebraTotal;
     });
 
     // Calculer la précision pour chaque type
@@ -191,7 +191,7 @@ function getMeilleurType(partie: any): string {
     { nom: 'multiplication', correctes: partie.multiplicationCorrectes, total: partie.multiplicationTotal },
     { nom: 'division', correctes: partie.divisionCorrectes, total: partie.divisionTotal },
     { nom: 'puissance', correctes: partie.puissanceCorrectes, total: partie.puissanceTotal },
-    { nom: 'algebra', correctes: partie.algebraCorrectes, total: partie.algebraTotal }
+    { nom: 'algebre', correctes: partie.algebraCorrectes, total: partie.algebraTotal }
   ];
 
   let meilleurType = '-';

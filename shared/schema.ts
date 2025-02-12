@@ -34,8 +34,8 @@ export const enregistrementsPartie = pgTable("enregistrements_partie", {
   divisionTotal: integer("division_total").notNull().default(0),
   puissanceCorrectes: integer("puissance_correctes").notNull().default(0),
   puissanceTotal: integer("puissance_total").notNull().default(0),
-  algebraCorrectes: integer("algebra_correctes").notNull().default(0),
-  algebraTotal: integer("algebra_total").notNull().default(0)
+  algebraCorrectes: integer("algebre_correctes").notNull().default(0),
+  algebraTotal: integer("algebre_total").notNull().default(0)
 });
 
 // Schéma pour la connexion
@@ -91,7 +91,7 @@ export interface StatistiquesPartie {
     multiplication: { correctes: number; total: number; precision: number };
     division: { correctes: number; total: number; precision: number };
     puissance: { correctes: number; total: number; precision: number };
-    algebra: { correctes: number; total: number; precision: number };
+    algebre: { correctes: number; total: number; precision: number };
   };
   dernièrePartie: {
     score: number;

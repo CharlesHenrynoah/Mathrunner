@@ -10,13 +10,13 @@ function getRandomInt(min: number, max: number): number {
 
 export function generateProblem(level: number): Problem {
   switch(level) {
-    case 1: // Additions et soustractions simples
+    case 1: 
       return generateLevel1Problem();
-    case 2: // Opérations à deux chiffres et multiplications/divisions simples
+    case 2: 
       return generateLevel2Problem();
-    case 3: // Opérations plus complexes
+    case 3: 
       return generateLevel3Problem();
-    case 4: // Opérations avec parenthèses
+    case 4: 
       return generateLevel4Problem();
     default:
       return generateLevel1Problem();
@@ -152,7 +152,7 @@ function generateLevel4Problem(): Problem {
     }
   }
 
-  return { question, answer, type };
+  return { question, answer, type: "algebre" };
 }
 
 function calculateOperation(a: number, b: number, operation: string): number {
@@ -164,7 +164,7 @@ function calculateOperation(a: number, b: number, operation: string): number {
     case "×":
       return a * b;
     case "÷":
-      return Math.round(a / b); // Pour éviter les décimales
+      return Math.round(a / b); 
     default:
       return 0;
   }

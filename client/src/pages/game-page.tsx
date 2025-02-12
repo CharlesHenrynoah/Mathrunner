@@ -25,7 +25,7 @@ interface StatistiquesJeu {
     multiplication: { correctes: number; total: number };
     division: { correctes: number; total: number };
     puissance: { correctes: number; total: number };
-    algebra: { correctes: number; total: number };
+    algebre: { correctes: number; total: number };
   };
 }
 
@@ -55,7 +55,7 @@ export default function GamePage() {
       multiplication: { correctes: 0, total: 0 },
       division: { correctes: 0, total: 0 },
       puissance: { correctes: 0, total: 0 },
-      algebra: { correctes: 0, total: 0 }
+      algebre: { correctes: 0, total: 0 }
     }
   });
 
@@ -90,8 +90,8 @@ export default function GamePage() {
         divisionTotal: statsJeu.typeStats.division.total,
         puissanceCorrectes: statsJeu.typeStats.puissance.correctes,
         puissanceTotal: statsJeu.typeStats.puissance.total,
-        algebraCorrectes: statsJeu.typeStats.algebra.correctes,
-        algebraTotal: statsJeu.typeStats.algebra.total
+        algebraCorrectes: statsJeu.typeStats.algebre.correctes,
+        algebraTotal: statsJeu.typeStats.algebre.total
       });
     }
   };
@@ -202,7 +202,7 @@ export default function GamePage() {
         multiplication: { correctes: 0, total: 0 },
         division: { correctes: 0, total: 0 },
         puissance: { correctes: 0, total: 0 },
-        algebra: { correctes: 0, total: 0 }
+        algebre: { correctes: 0, total: 0 }
       }
     });
   };
