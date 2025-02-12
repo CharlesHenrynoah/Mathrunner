@@ -12,6 +12,22 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Runner } from "@/components/Runner";
 
+interface GameStats {
+  totalQuestions: number;
+  totalCorrect: number;
+  totalIncorrect: number;
+  startTime: number;
+  totalResponseTime: number;
+  typeStats: {
+    addition: { correct: number; total: number };
+    subtraction: { correct: number; total: number };
+    multiplication: { correct: number; total: number };
+    division: { correct: number; total: number };
+    power: { correct: number; total: number };
+    algebra: { correct: number; total: number };
+  };
+}
+
 export default function GamePage() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
@@ -25,6 +41,22 @@ export default function GamePage() {
   const [currentLevel, setCurrentLevel] = useState(1);
   const [maxLevelReached, setMaxLevelReached] = useState(1);
   const [problemTypes, setProblemTypes] = useState(new Set<string>());
+  const [questionStartTime, setQuestionStartTime] = useState(Date.now());
+  const [gameStats, setGameStats] = useState<GameStats>({
+    totalQuestions: 0,
+    totalCorrect: 0,
+    totalIncorrect: 0,
+    startTime: Date.now(),
+    totalResponseTime: 0,
+    typeStats: {
+      addition: { correct: 0, total: 0 },
+      subtraction: { correct: 0, total: 0 },
+      multiplication: { correct: 0, total: 0 },
+      division: { correct: 0, total: 0 },
+      power: { correct: 0, total: 0 },
+      algebra: { correct: 0, total: 0 }
+    }
+  });
 
   const baseTime = 400;
   const timePerLevel = () => baseTime;
@@ -38,11 +70,27 @@ export default function GamePage() {
 
   const submitGameRecord = () => {
     if (score > 0) {
+      const avgResponseTime = gameStats.totalResponseTime / gameStats.totalQuestions;
       submitRecord.mutate({
         score,
         level: maxLevelReached,
         problemType: Array.from(problemTypes).join(', '),
-        successfulProblems
+        totalQuestions: gameStats.totalQuestions,
+        totalCorrect: gameStats.totalCorrect,
+        totalIncorrect: gameStats.totalIncorrect,
+        avgResponseTime,
+        additionCorrect: gameStats.typeStats.addition.correct,
+        additionTotal: gameStats.typeStats.addition.total,
+        subtractionCorrect: gameStats.typeStats.subtraction.correct,
+        subtractionTotal: gameStats.typeStats.subtraction.total,
+        multiplicationCorrect: gameStats.typeStats.multiplication.correct,
+        multiplicationTotal: gameStats.typeStats.multiplication.total,
+        divisionCorrect: gameStats.typeStats.division.correct,
+        divisionTotal: gameStats.typeStats.division.total,
+        powerCorrect: gameStats.typeStats.power.correct,
+        powerTotal: gameStats.typeStats.power.total,
+        algebraCorrect: gameStats.typeStats.algebra.correct,
+        algebraTotal: gameStats.typeStats.algebra.total
       });
     }
   };
@@ -70,7 +118,7 @@ export default function GamePage() {
   }, [isActive, maxLevelReached, problemTypes, successfulProblems]);
 
   const submitRecord = useMutation({
-    mutationFn: async (data: { score: number; level: number; problemType: string; successfulProblems: number }) => {
+    mutationFn: async (data: any) => {
       const res = await apiRequest("POST", "/api/game/record", data);
       return res.json();
     },
@@ -80,10 +128,32 @@ export default function GamePage() {
     }
   });
 
+  const updateTypeStats = (type: string, isCorrect: boolean) => {
+    setGameStats(prev => {
+      const typeKey = type as keyof typeof prev.typeStats;
+      return {
+        ...prev,
+        totalQuestions: prev.totalQuestions + 1,
+        totalCorrect: prev.totalCorrect + (isCorrect ? 1 : 0),
+        totalIncorrect: prev.totalIncorrect + (isCorrect ? 0 : 1),
+        totalResponseTime: prev.totalResponseTime + ((Date.now() - questionStartTime) / 1000),
+        typeStats: {
+          ...prev.typeStats,
+          [typeKey]: {
+            correct: prev.typeStats[typeKey].correct + (isCorrect ? 1 : 0),
+            total: prev.typeStats[typeKey].total + 1
+          }
+        }
+      };
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const isCorrect = checkAnswer(problem, Number(answer));
+    updateTypeStats(problem.type, isCorrect);
 
-    if (checkAnswer(problem, Number(answer))) {
+    if (isCorrect) {
       setFeedback("correct");
       setScore(score + 10);
       setSuccessfulProblems(prev => prev + 1);
@@ -100,12 +170,14 @@ export default function GamePage() {
         setProblem(generateProblem(currentLevel));
         setAnswer("");
         setFeedback(null);
+        setQuestionStartTime(Date.now());
       }, 1000);
     } else {
       setFeedback("incorrect");
       setAnswer("");
       setTimeout(() => {
         setFeedback(null);
+        setQuestionStartTime(Date.now());
       }, 1000);
     }
   };
@@ -121,6 +193,22 @@ export default function GamePage() {
     setProblem(generateProblem(1));
     setAnswer("");
     setFeedback(null);
+    setQuestionStartTime(Date.now());
+    setGameStats({
+      totalQuestions: 0,
+      totalCorrect: 0,
+      totalIncorrect: 0,
+      startTime: Date.now(),
+      totalResponseTime: 0,
+      typeStats: {
+        addition: { correct: 0, total: 0 },
+        subtraction: { correct: 0, total: 0 },
+        multiplication: { correct: 0, total: 0 },
+        division: { correct: 0, total: 0 },
+        power: { correct: 0, total: 0 },
+        algebra: { correct: 0, total: 0 }
+      }
+    });
   };
 
   const handleStopGame = () => {
