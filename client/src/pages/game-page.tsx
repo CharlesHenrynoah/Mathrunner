@@ -19,8 +19,8 @@ export default function GamePage() {
   const [timeLeft, setTimeLeft] = useState(100);
   const [isActive, setIsActive] = useState(true);
 
-  const baseTime = 5000; // 5 secondes de base
-  const timePerLevel = () => Math.max(baseTime - (user!.currentLevel * 300), 1500); // Réduit de 300ms par niveau, minimum 1.5s
+  const baseTime = 2000; // 2 secondes de base au lieu de 5
+  const timePerLevel = () => Math.max(baseTime - (user!.currentLevel * 100), 1000); // Réduit de 100ms par niveau, minimum 1s
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -33,19 +33,19 @@ export default function GamePage() {
         // Facteur de ralentissement basé sur le niveau et le type d'opération
         let levelFactor = 1;
         if (user?.currentLevel === 1) {
-          levelFactor = problem.type === "addition" || problem.type === "subtraction" ? 0.5 : 1;
+          levelFactor = problem.type === "addition" || problem.type === "subtraction" ? 0.3 : 0.5;
         } else if (user?.currentLevel === 2) {
-          levelFactor = problem.type === "multiplication" || problem.type === "division" ? 1.2 : 0.8;
+          levelFactor = problem.type === "multiplication" || problem.type === "division" ? 0.6 : 0.4;
         } else if (user?.currentLevel === 3) {
-          levelFactor = 1.5;
+          levelFactor = 1.2;
         } else if (user?.currentLevel === 4) {
-          levelFactor = 2;
+          levelFactor = 1.5;
         }
 
-        const slowdownFactor = 1 + (elapsedTime * 0.1 * levelFactor);
+        const slowdownFactor = 1 + (elapsedTime * 0.05 * levelFactor); // Ralentissement plus progressif
 
         setTimeLeft((prevTime) => {
-          const newTime = prevTime - (1 / slowdownFactor);
+          const newTime = prevTime - (1.5 / slowdownFactor); // Décrément plus rapide
           if (newTime <= 0) {
             setIsActive(false);
             submitRecord.mutate({
