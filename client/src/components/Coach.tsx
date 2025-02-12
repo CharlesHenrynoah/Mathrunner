@@ -10,6 +10,7 @@ interface CoachProps {
     totalCorrect: number;
     totalIncorrect: number;
     avgResponseTime: number;
+    totalQuestions: number; // Added to track total questions
   };
   currentLevel: number;
   timeLeft: number;
@@ -34,17 +35,13 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
       if (avgTime > 5) {
         newTips.push({
           id: Date.now(),
-          message: "Visualisez le problème avant de répondre.",
+          message: "Prenez le temps de visualiser le problème. Imaginez les nombres dans votre tête avant de répondre.",
           type: 'info'
         });
-      }
-
-      // Conseils basés sur la précision
-      const accuracy = gameStats.totalCorrect / (gameStats.totalCorrect + gameStats.totalIncorrect) * 100;
-      if (accuracy < 70) {
+      } else if (avgTime < 2 && gameStats.totalIncorrect > gameStats.totalCorrect * 0.3) {
         newTips.push({
-          id: Date.now() + 1,
-          message: "Prenez votre temps pour répondre. La précision est plus importante que la vitesse.",
+          id: Date.now(),
+          message: "Vous répondez très vite ! C'est bien, mais prenez une seconde de plus pour vérifier votre calcul.",
           type: 'warning'
         });
       }
@@ -53,27 +50,43 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
       if (timeLeft < 30) {
         newTips.push({
           id: Date.now() + 2,
-          message: "Attention, le temps diminue rapidement ! Essayez d'attraper le bonus de temps.",
+          message: "Le temps file ! 🏃‍♂️ Attrapez le bonus de temps pour reprendre votre souffle.",
+          type: 'warning'
+        });
+      }
+
+      // Conseils basés sur la précision
+      const accuracy = gameStats.totalCorrect / (gameStats.totalCorrect + gameStats.totalIncorrect) * 100;
+      if (accuracy < 70 && gameStats.totalQuestions > 5) {
+        newTips.push({
+          id: Date.now() + 1,
+          message: "La précision est votre meilleure alliée. Respirez et concentrez-vous sur chaque problème.",
           type: 'warning'
         });
       }
 
       // Conseils par type d'opération
       Object.entries(gameStats.typeStats).forEach(([type, stats]) => {
-        if (stats.total > 0 && (stats.correct / stats.total) < 0.6) {
+        if (stats.total > 3 && (stats.correct / stats.total) < 0.6) {
+          const messages = {
+            addition: "Les additions vous donnent du fil à retordre ? Essayez de décomposer les nombres !",
+            subtraction: "Pour les soustractions, visualisez le plus grand nombre qui diminue.",
+            multiplication: "Pour les multiplications, pensez-y comme des additions répétées.",
+            division: "Les divisions sont comme des parts de gâteau : combien de parts égales peut-on faire ?"
+          };
           newTips.push({
             id: Date.now() + 3,
-            message: `Essayez de vous concentrer davantage sur les problèmes de type ${type}.`,
+            message: messages[type as keyof typeof messages] || `Les problèmes de type ${type} méritent plus d'attention.`,
             type: 'info'
           });
         }
       });
 
-      // Conseils basés sur le niveau
+      // Conseils basés sur le niveau et la progression
       if (currentLevel === 1 && gameStats.totalCorrect > 10) {
         newTips.push({
           id: Date.now() + 4,
-          message: `Votre temps moyen est de ${avgTime.toFixed(1)}s. Essayez de maintenir un rythme régulier.`,
+          message: `Excellent rythme ! Votre moyenne de ${avgTime.toFixed(1)}s par réponse est impressionnante. 🌟`,
           type: 'success'
         });
       }
@@ -132,7 +145,7 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
                   </div>
                 ))
               ) : (
-                <p className="text-sm">Je suis là pour vous aider. Commencez à jouer !</p>
+                <p className="text-sm">Je suis là pour vous guider ! Prêt à relever le défi ? 🎯</p>
               )}
             </div>
           </div>
