@@ -19,9 +19,10 @@ export default function GamePage() {
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
   const [timeLeft, setTimeLeft] = useState(100);
   const [isActive, setIsActive] = useState(true);
+  const [successfulProblems, setSuccessfulProblems] = useState(0);
 
-  const baseTime = 400; // 400ms de base au lieu de 2000ms
-  const timePerLevel = () => Math.max(baseTime - (user!.currentLevel * 20), 200); // Réduit de 20ms par niveau, minimum 200ms
+  const baseTime = 400;
+  const timePerLevel = () => Math.max(baseTime - (user!.currentLevel * 20), 200);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -31,7 +32,6 @@ export default function GamePage() {
       timer = setInterval(() => {
         const elapsedTime = (Date.now() - startTime) / 1000;
 
-        // Facteur de ralentissement basé sur le niveau et le type d'opération
         let levelFactor = 1;
         if (user?.currentLevel === 1) {
           levelFactor = problem.type === "addition" || problem.type === "subtraction" ? 0.2 : 0.3;
@@ -43,10 +43,10 @@ export default function GamePage() {
           levelFactor = 0.8;
         }
 
-        const slowdownFactor = 1 + (elapsedTime * 0.02 * levelFactor); // Ralentissement très progressif
+        const slowdownFactor = 1 + (elapsedTime * 0.02 * levelFactor);
 
         setTimeLeft((prevTime) => {
-          const newTime = prevTime - (3 / slowdownFactor); // Décrément 3x plus rapide
+          const newTime = prevTime - (3 / slowdownFactor);
           if (newTime <= 0) {
             setIsActive(false);
             submitRecord.mutate({
@@ -79,7 +79,19 @@ export default function GamePage() {
     if (checkAnswer(problem, Number(answer))) {
       setFeedback("correct");
       setScore(score + 10);
-      setTimeLeft(100); // Réinitialise le temps pour le prochain problème
+      setSuccessfulProblems(prev => prev + 1);
+      setTimeLeft(100);
+
+      // Si 5 problèmes sont résolus, soumettre le record et passer au niveau suivant
+      if (successfulProblems + 1 >= 5) {
+        submitRecord.mutate({
+          score,
+          level: user!.currentLevel,
+          problemType: problem.type
+        });
+        setSuccessfulProblems(0);
+      }
+
       setTimeout(() => {
         setProblem(generateProblem(user!.currentLevel));
         setAnswer("");
@@ -87,7 +99,7 @@ export default function GamePage() {
       }, 1000);
     } else {
       setFeedback("incorrect");
-      setAnswer(""); // Réinitialise juste la réponse, garde le même problème
+      setAnswer("");
       setTimeout(() => {
         setFeedback(null);
       }, 1000);
@@ -98,6 +110,7 @@ export default function GamePage() {
     setScore(0);
     setTimeLeft(100);
     setIsActive(true);
+    setSuccessfulProblems(0);
     setProblem(generateProblem(user!.currentLevel));
     setAnswer("");
     setFeedback(null);
@@ -109,7 +122,7 @@ export default function GamePage() {
         <div className="flex justify-between items-center">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold">Math Runner</h1>
-            <p className="text-muted-foreground">Niveau {user?.currentLevel}</p>
+            <p className="text-muted-foreground">Niveau {user?.currentLevel} ({successfulProblems}/5)</p>
           </div>
           <div className="space-x-4">
             <Link href="/dashboard">
