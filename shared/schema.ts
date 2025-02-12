@@ -20,12 +20,10 @@ export const gameRecords = pgTable("game_records", {
   level: integer("level").notNull(),
   problemType: text("problem_type").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  // Nouvelles statistiques
   totalQuestions: integer("total_questions").notNull(),
   totalCorrect: integer("total_correct").notNull(),
   totalIncorrect: integer("total_incorrect").notNull(),
   avgResponseTime: real("avg_response_time").notNull(),
-  // Statistiques par type
   additionCorrect: integer("addition_correct").notNull().default(0),
   additionTotal: integer("addition_total").notNull().default(0),
   subtractionCorrect: integer("subtraction_correct").notNull().default(0),
@@ -91,9 +89,14 @@ export interface GameStats {
     level: number;
     correct: number;
     incorrect: number;
-    total: number;
     responseTime: number;
     bestType: string;
-    typeAccuracy: number;
   };
+  recentGames: Array<{
+    id: number;
+    score: number;
+    level: number;
+    problemType: string;
+    createdAt: string;
+  }>;
 }
