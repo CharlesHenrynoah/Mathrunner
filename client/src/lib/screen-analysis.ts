@@ -13,11 +13,11 @@ export async function captureAndAnalyzeScreen(): Promise<GeminiAnalysis> {
       throw new Error('Game container not found');
     }
 
-    const canvas = await html2canvas(gameElement as HTMLElement);
-    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    const canvas = await html2canvas(gameElement);
+    const imageData = canvas.toDataURL('image/jpeg', 0.5); // Réduit la qualité pour diminuer la taille
 
     // Prépare les données pour Gemini
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent', {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -41,19 +41,26 @@ export async function captureAndAnalyzeScreen(): Promise<GeminiAnalysis> {
               - L'état émotionnel suggéré par les réponses précédentes
 
               Sois encourageant mais direct. Utilise un ton naturel et amical.
-              Limite ta réponse à 100 caractères.
+              Limite ta réponse à 50 caractères maximum.
               Ajoute un emoji pertinent au début de ta réponse.`
             }
           ]
-        }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 100
+        }
       })
     });
 
     if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Gemini API error:', errorData);
       throw new Error(`API error: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('Gemini response:', data); // Debug log
 
     if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
       throw new Error('Invalid API response format');
@@ -61,7 +68,7 @@ export async function captureAndAnalyzeScreen(): Promise<GeminiAnalysis> {
 
     const analysis = data.candidates[0].content.parts[0].text;
 
-    // Détermine le type de message basé sur le contenu et la situation
+    // Détermine le type de message basé sur le contenu
     let type: 'info' | 'warning' | 'success' = 'info';
 
     if (analysis.toLowerCase().includes('attention') || 
@@ -80,6 +87,6 @@ export async function captureAndAnalyzeScreen(): Promise<GeminiAnalysis> {
     };
   } catch (error) {
     console.error('Error analyzing screen:', error);
-    throw error; // Propager l'erreur pour la gérer dans le composant Coach
+    throw error;
   }
 }
