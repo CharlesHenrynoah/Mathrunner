@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -19,7 +19,25 @@ export const gameRecords = pgTable("game_records", {
   score: integer("score").notNull(),
   level: integer("level").notNull(),
   problemType: text("problem_type").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow()
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  // Nouvelles statistiques
+  totalQuestions: integer("total_questions").notNull(),
+  totalCorrect: integer("total_correct").notNull(),
+  totalIncorrect: integer("total_incorrect").notNull(),
+  avgResponseTime: real("avg_response_time").notNull(),
+  // Statistiques par type
+  additionCorrect: integer("addition_correct").notNull().default(0),
+  additionTotal: integer("addition_total").notNull().default(0),
+  subtractionCorrect: integer("subtraction_correct").notNull().default(0),
+  subtractionTotal: integer("subtraction_total").notNull().default(0),
+  multiplicationCorrect: integer("multiplication_correct").notNull().default(0),
+  multiplicationTotal: integer("multiplication_total").notNull().default(0),
+  divisionCorrect: integer("division_correct").notNull().default(0),
+  divisionTotal: integer("division_total").notNull().default(0),
+  powerCorrect: integer("power_correct").notNull().default(0),
+  powerTotal: integer("power_total").notNull().default(0),
+  algebraCorrect: integer("algebra_correct").notNull().default(0),
+  algebraTotal: integer("algebra_total").notNull().default(0)
 });
 
 // Schema pour la connexion
@@ -49,3 +67,33 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 export type User = typeof users.$inferSelect;
 export type GameRecord = typeof gameRecords.$inferSelect;
+
+// Types pour les statistiques calculées
+export interface GameStats {
+  bestScore: number;
+  avgScore: number;
+  totalGames: number;
+  totalCorrect: number;
+  totalQuestions: number;
+  totalIncorrect: number;
+  avgResponseTime: number;
+  overallAccuracy: number;
+  typeStats: {
+    addition: { correct: number; total: number; accuracy: number };
+    subtraction: { correct: number; total: number; accuracy: number };
+    multiplication: { correct: number; total: number; accuracy: number };
+    division: { correct: number; total: number; accuracy: number };
+    power: { correct: number; total: number; accuracy: number };
+    algebra: { correct: number; total: number; accuracy: number };
+  };
+  lastGame: {
+    score: number;
+    level: number;
+    correct: number;
+    incorrect: number;
+    total: number;
+    responseTime: number;
+    bestType: string;
+    typeAccuracy: number;
+  };
+}
