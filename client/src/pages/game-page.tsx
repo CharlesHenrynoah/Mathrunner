@@ -17,12 +17,13 @@ export default function GamePage() {
   const [, navigate] = useLocation();
   const [answer, setAnswer] = useState("");
   const [score, setScore] = useState(0);
-  const [problem, setProblem] = useState(generateProblem(user!.currentLevel));
+  const [problem, setProblem] = useState(generateProblem(1));
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
   const [timeLeft, setTimeLeft] = useState(100);
   const [isActive, setIsActive] = useState(true);
   const [successfulProblems, setSuccessfulProblems] = useState(0);
-  const [maxLevelReached, setMaxLevelReached] = useState(0);
+  const [currentLevel, setCurrentLevel] = useState(1);
+  const [maxLevelReached, setMaxLevelReached] = useState(1);
   const [problemTypes, setProblemTypes] = useState(new Set<string>());
 
   const baseTime = 400;
@@ -31,16 +32,20 @@ export default function GamePage() {
   useEffect(() => {
     handleRestart();
     return () => {
-      if (score > 0) {
-        submitRecord.mutate({
-          score,
-          level: maxLevelReached,
-          problemType: Array.from(problemTypes).join(', '),
-          successfulProblems
-        });
-      }
+      submitGameRecord();
     };
   }, []);
+
+  const submitGameRecord = () => {
+    if (score > 0) {
+      submitRecord.mutate({
+        score,
+        level: maxLevelReached,
+        problemType: Array.from(problemTypes).join(', '),
+        successfulProblems
+      });
+    }
+  };
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -55,12 +60,7 @@ export default function GamePage() {
           const newTime = prevTime - (3 / slowdownFactor);
           if (newTime <= 0) {
             setIsActive(false);
-            submitRecord.mutate({
-              score,
-              level: maxLevelReached,
-              problemType: Array.from(problemTypes).join(', '),
-              successfulProblems
-            });
+            submitGameRecord();
           }
           return newTime;
         });
@@ -74,13 +74,7 @@ export default function GamePage() {
       const res = await apiRequest("POST", "/api/game/record", data);
       return res.json();
     },
-    onSuccess: (data) => {
-      if (user) {
-        user.currentLevel = 0;
-      }
-      setSuccessfulProblems(0);
-      setMaxLevelReached(0);
-      setProblemTypes(new Set());
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     }
@@ -93,21 +87,17 @@ export default function GamePage() {
       setFeedback("correct");
       setScore(score + 10);
       setSuccessfulProblems(prev => prev + 1);
-      setMaxLevelReached(Math.max(maxLevelReached, user!.currentLevel));
       setProblemTypes(prev => new Set(prev).add(problem.type));
       setTimeLeft(100);
 
       if (successfulProblems + 1 >= 5) {
-        submitRecord.mutate({
-          score,
-          level: maxLevelReached,
-          problemType: Array.from(problemTypes).join(', '),
-          successfulProblems: successfulProblems + 1
-        });
+        setCurrentLevel(prev => prev + 1);
+        setMaxLevelReached(prev => Math.max(prev, currentLevel));
+        setSuccessfulProblems(0);
       }
 
       setTimeout(() => {
-        setProblem(generateProblem(user!.currentLevel));
+        setProblem(generateProblem(currentLevel));
         setAnswer("");
         setFeedback(null);
       }, 1000);
@@ -125,14 +115,17 @@ export default function GamePage() {
     setTimeLeft(100);
     setIsActive(true);
     setSuccessfulProblems(0);
-    setMaxLevelReached(0);
+    setCurrentLevel(1);
+    setMaxLevelReached(1);
     setProblemTypes(new Set());
-    if (user) {
-      user.currentLevel = 0;
-    }
-    setProblem(generateProblem(0)); 
+    setProblem(generateProblem(1));
     setAnswer("");
     setFeedback(null);
+  };
+
+  const handleStopGame = () => {
+    setIsActive(false);
+    submitGameRecord();
   };
 
   const handleTargetReached = () => {
@@ -146,27 +139,26 @@ export default function GamePage() {
           <div className="space-y-1">
             <h1 className="text-2xl font-bold">Math Runner</h1>
             <p className="text-muted-foreground">
-              Niveau actuel : {user?.currentLevel} ({successfulProblems}/5)
+              Niveau actuel : {currentLevel} ({successfulProblems}/5)
             </p>
           </div>
           <div className="space-x-4">
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setIsActive(false);
-                if (score > 0) {
-                  submitRecord.mutate({
-                    score,
-                    level: maxLevelReached,
-                    problemType: Array.from(problemTypes).join(', '),
-                    successfulProblems
-                  });
-                }
-                navigate("/dashboard");
-              }}
-            >
-              Tableau de bord
-            </Button>
+            {!isActive && (
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/dashboard")}
+              >
+                Tableau de bord
+              </Button>
+            )}
+            {isActive && (
+              <Button 
+                variant="outline"
+                onClick={handleStopGame}
+              >
+                Arrêter la partie
+              </Button>
+            )}
             <div className="inline-block">
               <p className="text-sm font-medium">Score</p>
               <p className="text-2xl font-bold">{score}</p>
@@ -230,6 +222,7 @@ export default function GamePage() {
             <CardContent className="p-6 text-center">
               <h2 className="text-2xl font-bold mb-4">Partie terminée!</h2>
               <p className="mb-4">Score final: {score}</p>
+              <p className="mb-4">Niveau maximum atteint: {maxLevelReached}</p>
               <Button onClick={handleRestart}>Nouvelle partie</Button>
             </CardContent>
           </Card>
