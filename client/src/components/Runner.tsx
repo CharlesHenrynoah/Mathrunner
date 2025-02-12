@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 interface Position {
   x: number;
@@ -15,7 +15,7 @@ export function Runner({ onTargetReached, timeBonus = 20 }: RunnerProps) {
   const [targetPos, setTargetPos] = useState<Position>({ x: 2, y: 2 });
   const gridSize = 5;
 
-  const generateRandomPositions = () => {
+  const generateRandomPositions = useCallback(() => {
     const newRunnerPos = {
       x: Math.floor(Math.random() * gridSize),
       y: Math.floor(Math.random() * gridSize)
@@ -31,44 +31,44 @@ export function Runner({ onTargetReached, timeBonus = 20 }: RunnerProps) {
 
     setRunnerPos(newRunnerPos);
     setTargetPos(newTargetPos);
-  };
+  }, []);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    setRunnerPos(prev => {
+      let newPos = { ...prev };
+
+      switch (e.key) {
+        case 'ArrowUp':
+          if (prev.y > 0) newPos.y = prev.y - 1;
+          break;
+        case 'ArrowDown':
+          if (prev.y < gridSize - 1) newPos.y = prev.y + 1;
+          break;
+        case 'ArrowLeft':
+          if (prev.x > 0) newPos.x = prev.x - 1;
+          break;
+        case 'ArrowRight':
+          if (prev.x < gridSize - 1) newPos.x = prev.x + 1;
+          break;
+      }
+
+      // Vérifier si la cible est atteinte après le mouvement
+      if (newPos.x === targetPos.x && newPos.y === targetPos.y) {
+        onTargetReached(); // Appel du callback pour augmenter le temps
+        setTimeout(() => generateRandomPositions(), 100); // Générer de nouvelles positions avec un léger délai
+      }
+
+      return newPos;
+    });
+  }, [targetPos, onTargetReached, generateRandomPositions]);
 
   useEffect(() => {
     // Générer les positions initiales au montage
     generateRandomPositions();
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      setRunnerPos(prev => {
-        let newPos = { ...prev };
-
-        switch (e.key) {
-          case 'ArrowUp':
-            if (prev.y > 0) newPos.y = prev.y - 1;
-            break;
-          case 'ArrowDown':
-            if (prev.y < gridSize - 1) newPos.y = prev.y + 1;
-            break;
-          case 'ArrowLeft':
-            if (prev.x > 0) newPos.x = prev.x - 1;
-            break;
-          case 'ArrowRight':
-            if (prev.x < gridSize - 1) newPos.x = prev.x + 1;
-            break;
-        }
-
-        // Vérifier si la cible est atteinte après le mouvement
-        if (newPos.x === targetPos.x && newPos.y === targetPos.y) {
-          onTargetReached(); // Appel du callback pour augmenter le temps
-          generateRandomPositions(); // Générer de nouvelles positions immédiatement
-        }
-
-        return newPos;
-      });
-    };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [targetPos, onTargetReached]); // Ajouter targetPos et onTargetReached aux dépendances
+  }, [handleKeyDown, generateRandomPositions]); // Dépendances stables grâce à useCallback
 
   return (
     <div className="grid grid-cols-5 gap-2 w-full max-w-md mx-auto mb-4">
