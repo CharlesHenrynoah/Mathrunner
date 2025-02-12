@@ -75,9 +75,11 @@ export default function GamePage() {
       return res.json();
     },
     onSuccess: (data) => {
-      if (data.leveledUp) {
-        setSuccessfulProblems(0);
+      // Reset level to 0 after submitting score
+      if (user) {
+        user.currentLevel = 0;
       }
+      setSuccessfulProblems(0);
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     }
@@ -120,7 +122,10 @@ export default function GamePage() {
     setTimeLeft(100);
     setIsActive(true);
     setSuccessfulProblems(0);
-    setProblem(generateProblem(user!.currentLevel));
+    if (user) {
+      user.currentLevel = 0;
+    }
+    setProblem(generateProblem(0)); // Start at level 0
     setAnswer("");
     setFeedback(null);
   };
