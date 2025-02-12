@@ -11,6 +11,7 @@ export interface IStorage {
   updateUserStats(userId: number, score: number, level: number): Promise<User>;
   addGameRecord(record: Omit<GameRecord, "id" | "createdAt">): Promise<GameRecord>;
   getUserStats(userId: number): Promise<GameRecord[]>;
+  getGameRecords(userId: number): Promise<GameRecord[]>;
   sessionStore: session.Store;
 }
 
@@ -83,6 +84,12 @@ export class MemStorage implements IStorage {
   }
 
   async getUserStats(userId: number): Promise<GameRecord[]> {
+    return Array.from(this.gameRecords.values())
+      .filter(record => record.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getGameRecords(userId: number): Promise<GameRecord[]> {
     return Array.from(this.gameRecords.values())
       .filter(record => record.userId === userId)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
