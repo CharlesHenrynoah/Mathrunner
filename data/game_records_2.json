@@ -1,0 +1,26 @@
+[
+  {
+    "userId": 2,
+    "score": 10,
+    "level": 1,
+    "problemType": "addition",
+    "totalQuestions": 1,
+    "totalCorrect": 1,
+    "totalIncorrect": 0,
+    "avgResponseTime": 5.077,
+    "additionCorrect": 1,
+    "additionTotal": 1,
+    "subtractionCorrect": 0,
+    "subtractionTotal": 0,
+    "multiplicationCorrect": 0,
+    "multiplicationTotal": 0,
+    "divisionCorrect": 0,
+    "divisionTotal": 0,
+    "powerCorrect": 0,
+    "powerTotal": 0,
+    "algebraCorrect": 0,
+    "algebraTotal": 0,
+    "id": 2,
+    "createdAt": "2025-02-12T23:08:58.536Z"
+  }
+]

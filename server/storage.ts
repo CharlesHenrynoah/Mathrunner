@@ -42,11 +42,11 @@ export class JsonStorage implements IStorage {
   }
 
   private getCurrentMaxId(): number {
-    return 1; // TODO: Implement by scanning user files
+    return 1;
   }
 
   private getCurrentMaxGameRecordId(): number {
-    return 1; // TODO: Implement by scanning game records
+    return 1;
   }
 
   private getUserFilePath(userId: number): string {
@@ -100,7 +100,6 @@ export class JsonStorage implements IStorage {
       JSON.stringify(user, null, 2)
     );
 
-    // Initialize empty game records file
     await fs.writeFile(
       this.getGameRecordsFilePath(id),
       JSON.stringify([], null, 2)
@@ -151,7 +150,12 @@ export class JsonStorage implements IStorage {
   async getGameRecords(userId: number): Promise<GameRecord[]> {
     try {
       const data = await fs.readFile(this.getGameRecordsFilePath(userId), 'utf-8');
-      return JSON.parse(data);
+      const records = JSON.parse(data);
+      // Convert createdAt strings back to Date objects
+      return records.map((record: any) => ({
+        ...record,
+        createdAt: new Date(record.createdAt)
+      }));
     } catch {
       return [];
     }
