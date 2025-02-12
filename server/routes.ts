@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
-import { storage } from "./storage";
+import { stockage } from "./storage";
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
@@ -10,114 +10,114 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     // Récupérer tous les enregistrements de jeu de l'utilisateur
-    const records = await storage.getGameRecords(req.user.id);
+    const enregistrements = await stockage.getEnregistrementsPartie(req.user.id);
 
-    if (!records || records.length === 0) {
+    if (!enregistrements || enregistrements.length === 0) {
       return res.json({
-        bestScore: 0,
-        avgScore: 0,
-        totalGames: 0,
-        totalCorrect: 0,
+        meilleurScore: 0,
+        scoreMoyen: 0,
+        totalParties: 0,
+        totalCorrectes: 0,
         totalQuestions: 0,
-        totalIncorrect: 0,
-        avgResponseTime: 0,
-        overallAccuracy: 0,
-        typeStats: {
-          addition: { correct: 0, total: 0, accuracy: 0 },
-          subtraction: { correct: 0, total: 0, accuracy: 0 },
-          multiplication: { correct: 0, total: 0, accuracy: 0 },
-          division: { correct: 0, total: 0, accuracy: 0 },
-          power: { correct: 0, total: 0, accuracy: 0 },
-          algebra: { correct: 0, total: 0, accuracy: 0 }
+        totalIncorrectes: 0,
+        tempsReponseMoyen: 0,
+        precisionGlobale: 0,
+        statsParType: {
+          addition: { correctes: 0, total: 0, precision: 0 },
+          soustraction: { correctes: 0, total: 0, precision: 0 },
+          multiplication: { correctes: 0, total: 0, precision: 0 },
+          division: { correctes: 0, total: 0, precision: 0 },
+          puissance: { correctes: 0, total: 0, precision: 0 },
+          algebra: { correctes: 0, total: 0, precision: 0 }
         },
-        lastGame: {
+        dernièrePartie: {
           score: 0,
-          level: 0,
-          correct: 0,
-          incorrect: 0,
-          responseTime: 0,
-          bestType: "-"
+          niveau: 0,
+          correctes: 0,
+          incorrectes: 0,
+          tempsReponse: 0,
+          meilleurType: "-"
         },
-        recentGames: []
+        partiesRecentes: []
       });
     }
 
     // Calculer les statistiques globales
-    const totalGames = records.length;
-    const bestScore = Math.max(...records.map(r => r.score));
-    const avgScore = Math.round(records.reduce((sum, r) => sum + r.score, 0) / totalGames);
-    const totalCorrect = records.reduce((sum, r) => sum + r.totalCorrect, 0);
-    const totalQuestions = records.reduce((sum, r) => sum + r.totalQuestions, 0);
-    const totalIncorrect = records.reduce((sum, r) => sum + r.totalIncorrect, 0);
-    const avgResponseTime = Number((records.reduce((sum, r) => sum + r.avgResponseTime, 0) / totalGames).toFixed(2));
-    const overallAccuracy = Math.round((totalCorrect / totalQuestions) * 100) || 0;
+    const totalParties = enregistrements.length;
+    const meilleurScore = Math.max(...enregistrements.map(r => r.score));
+    const scoreMoyen = Math.round(enregistrements.reduce((sum, r) => sum + r.score, 0) / totalParties);
+    const totalCorrectes = enregistrements.reduce((sum, r) => sum + r.totalCorrectes, 0);
+    const totalQuestions = enregistrements.reduce((sum, r) => sum + r.totalQuestions, 0);
+    const totalIncorrectes = enregistrements.reduce((sum, r) => sum + r.totalIncorrectes, 0);
+    const tempsReponseMoyen = Number((enregistrements.reduce((sum, r) => sum + r.tempsReponseeMoyen, 0) / totalParties).toFixed(2));
+    const precisionGlobale = Math.round((totalCorrectes / totalQuestions) * 100) || 0;
 
     // Calculer les statistiques par type
-    const typeStats = {
-      addition: { correct: 0, total: 0, accuracy: 0 },
-      subtraction: { correct: 0, total: 0, accuracy: 0 },
-      multiplication: { correct: 0, total: 0, accuracy: 0 },
-      division: { correct: 0, total: 0, accuracy: 0 },
-      power: { correct: 0, total: 0, accuracy: 0 },
-      algebra: { correct: 0, total: 0, accuracy: 0 }
+    const statsParType = {
+      addition: { correctes: 0, total: 0, precision: 0 },
+      soustraction: { correctes: 0, total: 0, precision: 0 },
+      multiplication: { correctes: 0, total: 0, precision: 0 },
+      division: { correctes: 0, total: 0, precision: 0 },
+      puissance: { correctes: 0, total: 0, precision: 0 },
+      algebra: { correctes: 0, total: 0, precision: 0 }
     };
 
-    records.forEach(record => {
-      typeStats.addition.correct += record.additionCorrect;
-      typeStats.addition.total += record.additionTotal;
-      typeStats.subtraction.correct += record.subtractionCorrect;
-      typeStats.subtraction.total += record.subtractionTotal;
-      typeStats.multiplication.correct += record.multiplicationCorrect;
-      typeStats.multiplication.total += record.multiplicationTotal;
-      typeStats.division.correct += record.divisionCorrect;
-      typeStats.division.total += record.divisionTotal;
-      typeStats.power.correct += record.powerCorrect;
-      typeStats.power.total += record.powerTotal;
-      typeStats.algebra.correct += record.algebraCorrect;
-      typeStats.algebra.total += record.algebraTotal;
+    enregistrements.forEach(enregistrement => {
+      statsParType.addition.correctes += enregistrement.additionCorrectes;
+      statsParType.addition.total += enregistrement.additionTotal;
+      statsParType.soustraction.correctes += enregistrement.soustractionCorrectes;
+      statsParType.soustraction.total += enregistrement.soustractionTotal;
+      statsParType.multiplication.correctes += enregistrement.multiplicationCorrectes;
+      statsParType.multiplication.total += enregistrement.multiplicationTotal;
+      statsParType.division.correctes += enregistrement.divisionCorrectes;
+      statsParType.division.total += enregistrement.divisionTotal;
+      statsParType.puissance.correctes += enregistrement.puissanceCorrectes;
+      statsParType.puissance.total += enregistrement.puissanceTotal;
+      statsParType.algebra.correctes += enregistrement.algebraCorrectes;
+      statsParType.algebra.total += enregistrement.algebraTotal;
     });
 
     // Calculer la précision pour chaque type
-    Object.keys(typeStats).forEach(key => {
-      const stats = typeStats[key as keyof typeof typeStats];
-      stats.accuracy = Math.round((stats.correct / stats.total) * 100) || 0;
+    Object.keys(statsParType).forEach(key => {
+      const stats = statsParType[key as keyof typeof statsParType];
+      stats.precision = Math.round((stats.correctes / stats.total) * 100) || 0;
     });
 
     // Obtenir les données de la dernière partie
-    const lastGame = records[records.length - 1];
-    const lastGameStats = {
-      score: lastGame.score,
-      level: lastGame.level,
-      correct: lastGame.totalCorrect,
-      incorrect: lastGame.totalIncorrect,
-      responseTime: Number(lastGame.avgResponseTime.toFixed(2)),
-      bestType: getBestType(lastGame)
+    const dernierePartie = enregistrements[enregistrements.length - 1];
+    const statsPartieDerniere = {
+      score: dernierePartie.score,
+      niveau: dernierePartie.niveau,
+      correctes: dernierePartie.totalCorrectes,
+      incorrectes: dernierePartie.totalIncorrectes,
+      tempsReponse: Number(dernierePartie.tempsReponseeMoyen.toFixed(2)),
+      meilleurType: getMeilleurType(dernierePartie)
     };
 
     // Récupérer les parties récentes (limitées à 10)
-    const recentGames = records
+    const partiesRecentes = enregistrements
       .slice(-10)
       .reverse()
-      .map(record => ({
-        id: record.id,
-        score: record.score,
-        level: record.level,
-        problemType: record.problemType,
-        createdAt: record.createdAt.toISOString()
+      .map(enregistrement => ({
+        id: enregistrement.id,
+        score: enregistrement.score,
+        niveau: enregistrement.niveau,
+        typeProbleme: enregistrement.typeProbleme,
+        dateCreation: enregistrement.dateCreation.toISOString()
       }));
 
     res.json({
-      bestScore,
-      avgScore,
-      totalGames,
-      totalCorrect,
+      meilleurScore,
+      scoreMoyen,
+      totalParties,
+      totalCorrectes,
       totalQuestions,
-      totalIncorrect,
-      avgResponseTime,
-      overallAccuracy,
-      typeStats,
-      lastGame: lastGameStats,
-      recentGames
+      totalIncorrectes,
+      tempsReponseMoyen,
+      precisionGlobale,
+      statsParType,
+      dernièrePartie: statsPartieDerniere,
+      partiesRecentes
     });
   });
 
@@ -126,56 +126,56 @@ export function registerRoutes(app: Express): Server {
 
     const {
       score,
-      level,
-      problemType,
+      niveau,
+      typeProbleme,
       totalQuestions,
-      totalCorrect,
-      totalIncorrect,
-      avgResponseTime,
-      additionCorrect,
+      totalCorrectes,
+      totalIncorrectes,
+      tempsReponseMoyen,
+      additionCorrectes,
       additionTotal,
-      subtractionCorrect,
-      subtractionTotal,
-      multiplicationCorrect,
+      soustractionCorrectes,
+      soustractionTotal,
+      multiplicationCorrectes,
       multiplicationTotal,
-      divisionCorrect,
+      divisionCorrectes,
       divisionTotal,
-      powerCorrect,
-      powerTotal,
-      algebraCorrect,
+      puissanceCorrectes,
+      puissanceTotal,
+      algebraCorrectes,
       algebraTotal
     } = req.body;
 
-    const gameRecord = await storage.addGameRecord({
-      userId: req.user.id,
+    const enregistrementPartie = await stockage.ajouterEnregistrementPartie({
+      idUtilisateur: req.user.id,
       score,
-      level,
-      problemType,
+      niveau,
+      typeProbleme,
       totalQuestions,
-      totalCorrect,
-      totalIncorrect,
-      avgResponseTime,
-      additionCorrect,
+      totalCorrectes,
+      totalIncorrectes,
+      tempsReponseeMoyen: tempsReponseMoyen,
+      additionCorrectes,
       additionTotal,
-      subtractionCorrect,
-      subtractionTotal,
-      multiplicationCorrect,
+      soustractionCorrectes,
+      soustractionTotal,
+      multiplicationCorrectes,
       multiplicationTotal,
-      divisionCorrect,
+      divisionCorrectes,
       divisionTotal,
-      powerCorrect,
-      powerTotal,
-      algebraCorrect,
+      puissanceCorrectes,
+      puissanceTotal,
+      algebraCorrectes,
       algebraTotal
     });
 
-    const updatedUser = await storage.updateUserStats(req.user.id, score, level);
-    req.login(updatedUser, (err) => {
+    const utilisateurMisAJour = await stockage.mettreAJourStatsUtilisateur(req.user.id, score, niveau);
+    req.login(utilisateurMisAJour, (err) => {
       if (err) return res.status(500).send(err.message);
       res.json({
-        gameRecord,
-        leveledUp: false,
-        newLevel: level
+        enregistrementPartie,
+        niveauAugmente: false,
+        nouveauNiveau: niveau
       });
     });
   });
@@ -184,28 +184,28 @@ export function registerRoutes(app: Express): Server {
   return httpServer;
 }
 
-function getBestType(game: any): string {
+function getMeilleurType(partie: any): string {
   const types = [
-    { name: 'addition', correct: game.additionCorrect, total: game.additionTotal },
-    { name: 'subtraction', correct: game.subtractionCorrect, total: game.subtractionTotal },
-    { name: 'multiplication', correct: game.multiplicationCorrect, total: game.multiplicationTotal },
-    { name: 'division', correct: game.divisionCorrect, total: game.divisionTotal },
-    { name: 'power', correct: game.powerCorrect, total: game.powerTotal },
-    { name: 'algebra', correct: game.algebraCorrect, total: game.algebraTotal }
+    { nom: 'addition', correctes: partie.additionCorrectes, total: partie.additionTotal },
+    { nom: 'soustraction', correctes: partie.soustractionCorrectes, total: partie.soustractionTotal },
+    { nom: 'multiplication', correctes: partie.multiplicationCorrectes, total: partie.multiplicationTotal },
+    { nom: 'division', correctes: partie.divisionCorrectes, total: partie.divisionTotal },
+    { nom: 'puissance', correctes: partie.puissanceCorrectes, total: partie.puissanceTotal },
+    { nom: 'algebra', correctes: partie.algebraCorrectes, total: partie.algebraTotal }
   ];
 
-  let bestType = '-';
-  let bestAccuracy = 0;
+  let meilleurType = '-';
+  let meilleurePrecision = 0;
 
   types.forEach(type => {
     if (type.total > 0) {
-      const accuracy = (type.correct / type.total) * 100;
-      if (accuracy > bestAccuracy) {
-        bestAccuracy = accuracy;
-        bestType = type.name;
+      const precision = (type.correctes / type.total) * 100;
+      if (precision > meilleurePrecision) {
+        meilleurePrecision = precision;
+        meilleurType = type.nom;
       }
     }
   });
 
-  return bestType;
+  return meilleurType;
 }

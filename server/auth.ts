@@ -4,12 +4,12 @@ import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
+import { stockage } from "./storage";
+import { Utilisateur as SelectUtilisateur } from "@shared/schema";
 
 declare global {
   namespace Express {
-    interface User extends SelectUser {}
+    interface User extends SelectUtilisateur {}
   }
 }
 
@@ -33,7 +33,7 @@ export function setupAuth(app: Express) {
     secret: process.env.REPL_ID!,
     resave: false,
     saveUninitialized: false,
-    store: storage.sessionStore,
+    store: stockage.sessionStore,
   };
 
   if (app.get("env") === "production") {
@@ -46,35 +46,35 @@ export function setupAuth(app: Express) {
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
-      const user = await storage.getUserByUsername(username);
-      if (!user || !(await comparePasswords(password, user.password))) {
+      const utilisateur = await stockage.getUtilisateurParNom(username);
+      if (!utilisateur || !(await comparePasswords(password, utilisateur.motDePasse))) {
         return done(null, false);
       } else {
-        return done(null, user);
+        return done(null, utilisateur);
       }
     }),
   );
 
-  passport.serializeUser((user, done) => done(null, user.id));
+  passport.serializeUser((utilisateur, done) => done(null, utilisateur.id));
   passport.deserializeUser(async (id: number, done) => {
-    const user = await storage.getUser(id);
-    done(null, user);
+    const utilisateur = await stockage.getUtilisateur(id);
+    done(null, utilisateur);
   });
 
   app.post("/api/register", async (req, res, next) => {
-    const existingUser = await storage.getUserByUsername(req.body.username);
+    const existingUser = await stockage.getUtilisateurParNom(req.body.nomUtilisateur);
     if (existingUser) {
-      return res.status(400).send("Username already exists");
+      return res.status(400).send("Le nom d'utilisateur existe déjà");
     }
 
-    const user = await storage.createUser({
+    const utilisateur = await stockage.creerUtilisateur({
       ...req.body,
-      password: await hashPassword(req.body.password),
+      motDePasse: await hashPassword(req.body.motDePasse),
     });
 
-    req.login(user, (err) => {
+    req.login(utilisateur, (err) => {
       if (err) return next(err);
-      res.status(201).json(user);
+      res.status(201).json(utilisateur);
     });
   });
 

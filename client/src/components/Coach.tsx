@@ -2,92 +2,94 @@ import { useState, useEffect, useRef } from "react";
 import { Brain, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
-interface CoachProps {
-  gameStats: {
-    typeStats: {
-      [key: string]: { correct: number; total: number };
-    };
-    totalCorrect: number;
-    totalIncorrect: number;
-    avgResponseTime: number;
+interface StatsCoach {
+  statsParType: {
+    [key: string]: { correctes: number; total: number };
   };
-  currentLevel: number;
-  timeLeft: number;
+  totalCorrectes: number;
+  totalIncorrectes: number;
+  tempsReponseMoyen: number;
 }
 
-interface Tip {
+interface PropsCoach {
+  statsJeu: StatsCoach;
+  niveauActuel: number;
+  tempsRestant: number;
+}
+
+interface Conseil {
   id: number;
   message: string;
   type: 'info' | 'warning' | 'success';
   timestamp: number;
-  source: 'stats' | 'time';
+  source: 'stats' | 'temps';
 }
 
-export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
-  const [tips, setTips] = useState<Tip[]>([]);
-  const [isVisible, setIsVisible] = useState(true);
-  const lastTipTimestamps = useRef<Record<string, number>>({});
+export function Coach({ statsJeu, niveauActuel, tempsRestant }: PropsCoach) {
+  const [conseils, setConseils] = useState<Conseil[]>([]);
+  const [estVisible, setEstVisible] = useState(true);
+  const dernierConseilTimestamps = useRef<Record<string, number>>({});
 
-  const COOLDOWN_TIMES = {
+  const TEMPS_ATTENTE = {
     stats: 2000,     // 2 secondes entre les conseils basés sur les stats
-    time: 1000       // 1 seconde entre les conseils sur le temps
+    temps: 1000       // 1 seconde entre les conseils sur le temps
   };
 
-  const addTip = (newTip: Omit<Tip, 'id' | 'timestamp'>) => {
-    const now = Date.now();
-    const lastTipTime = lastTipTimestamps.current[newTip.source] || 0;
+  const ajouterConseil = (nouveauConseil: Omit<Conseil, 'id' | 'timestamp'>) => {
+    const maintenant = Date.now();
+    const dernierTemps = dernierConseilTimestamps.current[nouveauConseil.source] || 0;
 
-    // Vérifier le cooldown par source
-    if (now - lastTipTime < COOLDOWN_TIMES[newTip.source]) {
+    // Vérifier le temps d'attente par source
+    if (maintenant - dernierTemps < TEMPS_ATTENTE[nouveauConseil.source]) {
       return;
     }
 
-    setTips(prev => {
+    setConseils(prev => {
       // Filtrer les conseils expirés (plus vieux que 10 secondes)
-      const filteredTips = prev.filter(tip => now - tip.timestamp < 10000);
+      const conseilsFiltres = prev.filter(conseil => maintenant - conseil.timestamp < 10000);
 
       // Vérifier si un conseil similaire existe déjà
-      const hasSimilarTip = filteredTips.some(tip => 
-        tip.message === newTip.message || 
-        (tip.source === newTip.source && now - tip.timestamp < COOLDOWN_TIMES[newTip.source])
+      const aConseilSimilaire = conseilsFiltres.some(conseil => 
+        conseil.message === nouveauConseil.message || 
+        (conseil.source === nouveauConseil.source && maintenant - conseil.timestamp < TEMPS_ATTENTE[nouveauConseil.source])
       );
 
-      if (hasSimilarTip) return filteredTips;
+      if (aConseilSimilaire) return conseilsFiltres;
 
       // Mettre à jour le timestamp du dernier conseil de cette source
-      lastTipTimestamps.current[newTip.source] = now;
+      dernierConseilTimestamps.current[nouveauConseil.source] = maintenant;
 
-      const tipWithMeta = {
-        ...newTip,
+      const conseilAvecMeta = {
+        ...nouveauConseil,
         id: Date.now(),
-        timestamp: now
+        timestamp: maintenant
       };
 
       // Garder uniquement les 3 derniers conseils
-      return [...filteredTips, tipWithMeta].slice(-3);
+      return [...conseilsFiltres, conseilAvecMeta].slice(-3);
     });
   };
 
   useEffect(() => {
-    const generateTip = () => {
+    const genererConseil = () => {
       // Conseil basé sur le temps restant (plus urgent)
-      if (timeLeft < 30) {
-        const urgencyLevel = timeLeft < 15 ? 'critique' : 'important';
-        const emoji = timeLeft < 15 ? '⚡' : '⏰';
-        addTip({
-          message: `${emoji} ${timeLeft < 10 ? 'URGENT' : 'Vite'} ! ${timeLeft.toFixed(0)}s - Bonus temps nécessaire !`,
+      if (tempsRestant < 30) {
+        const niveauUrgence = tempsRestant < 15 ? 'critique' : 'important';
+        const emoji = tempsRestant < 15 ? '⚡' : '⏰';
+        ajouterConseil({
+          message: `${emoji} ${tempsRestant < 10 ? 'URGENT' : 'Vite'} ! ${tempsRestant.toFixed(0)}s - Bonus temps nécessaire !`,
           type: 'warning',
-          source: 'time'
+          source: 'temps'
         });
       }
 
       // Conseils basés sur les performances
-      if (gameStats.totalCorrect + gameStats.totalIncorrect > 0) {
-        const isSpeedingUp = gameStats.avgResponseTime < 3;
-        const hasHighErrorRate = gameStats.totalIncorrect > gameStats.totalCorrect * 0.3;
+      if (statsJeu.totalCorrectes + statsJeu.totalIncorrectes > 0) {
+        const accelere = statsJeu.tempsReponseMoyen < 3;
+        const tauxErreurEleve = statsJeu.totalIncorrectes > statsJeu.totalCorrectes * 0.3;
 
-        if (isSpeedingUp && hasHighErrorRate) {
-          addTip({
+        if (accelere && tauxErreurEleve) {
+          ajouterConseil({
             message: "🎯 Ralentissez un peu pour plus de précision !",
             type: 'warning',
             source: 'stats'
@@ -95,22 +97,22 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
         }
 
         // Analyse du type d'opération actuel
-        const weakestType = Object.entries(gameStats.typeStats)
+        const typePlusFaible = Object.entries(statsJeu.statsParType)
           .filter(([_, stats]) => stats.total >= 2)
-          .sort(([_, a], [__, b]) => (a.correct / a.total) - (b.correct / b.total))[0];
+          .sort(([_, a], [__, b]) => (a.correctes / a.total) - (b.correctes / b.total))[0];
 
-        if (weakestType && (weakestType[1].correct / weakestType[1].total) < 0.7) {
-          const tips = {
+        if (typePlusFaible && (typePlusFaible[1].correctes / typePlusFaible[1].total) < 0.7) {
+          const conseils = {
             addition: "➕ Groupez les nombres !",
-            subtraction: "➖ Pensez ligne numérique !",
+            soustraction: "➖ Pensez ligne numérique !",
             multiplication: "✖️ Table proche = repère !",
             division: "➗ Parts égales !",
-            power: "🔢 Étape par étape !",
+            puissance: "🔢 Étape par étape !",
             algebra: "🔤 Isolez x !"
           };
 
-          addTip({
-            message: tips[weakestType[0] as keyof typeof tips] || `Focus ${weakestType[0]} !`,
+          ajouterConseil({
+            message: conseils[typePlusFaible[0] as keyof typeof conseils] || `Focus ${typePlusFaible[0]} !`,
             type: 'info',
             source: 'stats'
           });
@@ -118,17 +120,17 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
       }
     };
 
-    const interval = setInterval(generateTip, 300);
-    generateTip(); // Premier appel immédiat
+    const interval = setInterval(genererConseil, 300);
+    genererConseil(); // Premier appel immédiat
 
     return () => clearInterval(interval);
-  }, [gameStats, currentLevel, timeLeft]);
+  }, [statsJeu, niveauActuel, tempsRestant]);
 
-  if (!isVisible) {
+  if (!estVisible) {
     return (
       <div 
         className="fixed bottom-4 right-4 z-50 cursor-pointer"
-        onClick={() => setIsVisible(true)}
+        onClick={() => setEstVisible(true)}
       >
         <div className="bg-purple-900 text-white p-3 rounded-full shadow-lg hover:bg-purple-800 transition-colors">
           <Brain className="h-6 w-6" />
@@ -146,24 +148,24 @@ export function Coach({ gameStats, currentLevel, timeLeft }: CoachProps) {
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold">Coach Personnel</h3>
               <button
-                onClick={() => setIsVisible(false)}
+                onClick={() => setEstVisible(false)}
                 className="text-white/70 hover:text-white transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <div className="space-y-2">
-              {tips.length > 0 ? (
-                tips.map(tip => (
+              {conseils.length > 0 ? (
+                conseils.map(conseil => (
                   <div
-                    key={tip.id}
+                    key={conseil.id}
                     className={`p-2 rounded-md animate-in fade-in slide-in-from-right-5 ${
-                      tip.type === 'warning' ? 'bg-yellow-500/20' :
-                      tip.type === 'success' ? 'bg-green-500/20' :
+                      conseil.type === 'warning' ? 'bg-yellow-500/20' :
+                      conseil.type === 'success' ? 'bg-green-500/20' :
                       'bg-blue-500/20'
                     }`}
                   >
-                    <p className="text-sm">{tip.message}</p>
+                    <p className="text-sm">{conseil.message}</p>
                   </div>
                 ))
               ) : (

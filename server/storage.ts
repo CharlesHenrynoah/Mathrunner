@@ -1,4 +1,4 @@
-import { User, InsertUser, GameRecord } from "@shared/schema";
+import { Utilisateur, InsertionUtilisateur, EnregistrementPartie } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import fs from "fs/promises";
@@ -7,74 +7,74 @@ import path from "path";
 const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUserStats(userId: number, score: number, level: number): Promise<User>;
-  addGameRecord(record: Omit<GameRecord, "id" | "createdAt">): Promise<GameRecord>;
-  getUserStats(userId: number): Promise<GameRecord[]>;
-  getGameRecords(userId: number): Promise<GameRecord[]>;
+  getUtilisateur(id: number): Promise<Utilisateur | undefined>;
+  getUtilisateurParNom(nomUtilisateur: string): Promise<Utilisateur | undefined>;
+  creerUtilisateur(utilisateur: InsertionUtilisateur): Promise<Utilisateur>;
+  mettreAJourStatsUtilisateur(idUtilisateur: number, score: number, niveau: number): Promise<Utilisateur>;
+  ajouterEnregistrementPartie(enregistrement: Omit<EnregistrementPartie, "id" | "dateCreation">): Promise<EnregistrementPartie>;
+  getStatsUtilisateur(idUtilisateur: number): Promise<EnregistrementPartie[]>;
+  getEnregistrementsPartie(idUtilisateur: number): Promise<EnregistrementPartie[]>;
   sessionStore: session.Store;
 }
 
-export class JsonStorage implements IStorage {
-  private dataDir: string;
+export class StockageJson implements IStorage {
+  private dossierDonnees: string;
   sessionStore: session.Store;
-  private currentId: number;
-  private currentGameRecordId: number;
+  private idCourant: number;
+  private idEnregistrementPartieCourant: number;
 
   constructor() {
-    this.dataDir = path.join(process.cwd(), 'data');
-    this.ensureDataDir();
-    this.currentId = this.getCurrentMaxId();
-    this.currentGameRecordId = this.getCurrentMaxGameRecordId();
+    this.dossierDonnees = path.join(process.cwd(), 'donnees');
+    this.assurerDossierDonnees();
+    this.idCourant = this.getIdMaxCourant();
+    this.idEnregistrementPartieCourant = this.getIdMaxEnregistrementPartieCourant();
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
   }
 
-  private async ensureDataDir() {
+  private async assurerDossierDonnees() {
     try {
-      await fs.mkdir(this.dataDir, { recursive: true });
+      await fs.mkdir(this.dossierDonnees, { recursive: true });
     } catch (error) {
-      console.error('Error creating data directory:', error);
+      console.error('Erreur création dossier données:', error);
     }
   }
 
-  private getCurrentMaxId(): number {
+  private getIdMaxCourant(): number {
     return 1;
   }
 
-  private getCurrentMaxGameRecordId(): number {
+  private getIdMaxEnregistrementPartieCourant(): number {
     return 1;
   }
 
-  private getUserFilePath(userId: number): string {
-    return path.join(this.dataDir, `user_${userId}.json`);
+  private getCheminFichierUtilisateur(idUtilisateur: number): string {
+    return path.join(this.dossierDonnees, `utilisateur_${idUtilisateur}.json`);
   }
 
-  private getGameRecordsFilePath(userId: number): string {
-    return path.join(this.dataDir, `game_records_${userId}.json`);
+  private getCheminFichierEnregistrementsPartie(idUtilisateur: number): string {
+    return path.join(this.dossierDonnees, `parties_${idUtilisateur}.json`);
   }
 
-  async getUser(id: number): Promise<User | undefined> {
+  async getUtilisateur(id: number): Promise<Utilisateur | undefined> {
     try {
-      const data = await fs.readFile(this.getUserFilePath(id), 'utf-8');
-      return JSON.parse(data);
+      const donnees = await fs.readFile(this.getCheminFichierUtilisateur(id), 'utf-8');
+      return JSON.parse(donnees);
     } catch {
       return undefined;
     }
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
+  async getUtilisateurParNom(nomUtilisateur: string): Promise<Utilisateur | undefined> {
     try {
-      const files = await fs.readdir(this.dataDir);
-      for (const file of files) {
-        if (file.startsWith('user_')) {
-          const data = await fs.readFile(path.join(this.dataDir, file), 'utf-8');
-          const user = JSON.parse(data);
-          if (user.username === username) {
-            return user;
+      const fichiers = await fs.readdir(this.dossierDonnees);
+      for (const fichier of fichiers) {
+        if (fichier.startsWith('utilisateur_')) {
+          const donnees = await fs.readFile(path.join(this.dossierDonnees, fichier), 'utf-8');
+          const utilisateur = JSON.parse(donnees);
+          if (utilisateur.nomUtilisateur === nomUtilisateur) {
+            return utilisateur;
           }
         }
       }
@@ -84,86 +84,85 @@ export class JsonStorage implements IStorage {
     }
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = ++this.currentId;
-    const user: User = {
-      ...insertUser,
+  async creerUtilisateur(insertUtilisateur: InsertionUtilisateur): Promise<Utilisateur> {
+    const id = ++this.idCourant;
+    const utilisateur: Utilisateur = {
+      ...insertUtilisateur,
       id,
-      currentLevel: 1,
-      totalScore: 0,
-      gamesPlayed: 0,
-      bestScore: 0
+      niveauActuel: 1,
+      scoreTotal: 0,
+      partiesJouees: 0,
+      meilleurScore: 0
     };
 
     await fs.writeFile(
-      this.getUserFilePath(id),
-      JSON.stringify(user, null, 2)
+      this.getCheminFichierUtilisateur(id),
+      JSON.stringify(utilisateur, null, 2)
     );
 
     await fs.writeFile(
-      this.getGameRecordsFilePath(id),
+      this.getCheminFichierEnregistrementsPartie(id),
       JSON.stringify([], null, 2)
     );
 
-    return user;
+    return utilisateur;
   }
 
-  async updateUserStats(userId: number, score: number, level: number): Promise<User> {
-    const user = await this.getUser(userId);
-    if (!user) throw new Error("User not found");
+  async mettreAJourStatsUtilisateur(idUtilisateur: number, score: number, niveau: number): Promise<Utilisateur> {
+    const utilisateur = await this.getUtilisateur(idUtilisateur);
+    if (!utilisateur) throw new Error("Utilisateur non trouvé");
 
-    const updatedUser: User = {
-      ...user,
-      currentLevel: Math.max(user.currentLevel, level),
-      totalScore: user.totalScore + score,
-      gamesPlayed: user.gamesPlayed + 1,
-      bestScore: Math.max(user.bestScore, score)
+    const utilisateurMisAJour: Utilisateur = {
+      ...utilisateur,
+      niveauActuel: Math.max(utilisateur.niveauActuel, niveau),
+      scoreTotal: utilisateur.scoreTotal + score,
+      partiesJouees: utilisateur.partiesJouees + 1,
+      meilleurScore: Math.max(utilisateur.meilleurScore, score)
     };
 
     await fs.writeFile(
-      this.getUserFilePath(userId),
-      JSON.stringify(updatedUser, null, 2)
+      this.getCheminFichierUtilisateur(idUtilisateur),
+      JSON.stringify(utilisateurMisAJour, null, 2)
     );
 
-    return updatedUser;
+    return utilisateurMisAJour;
   }
 
-  async addGameRecord(record: Omit<GameRecord, "id" | "createdAt">): Promise<GameRecord> {
-    const id = ++this.currentGameRecordId;
-    const gameRecord: GameRecord = {
-      ...record,
+  async ajouterEnregistrementPartie(enregistrement: Omit<EnregistrementPartie, "id" | "dateCreation">): Promise<EnregistrementPartie> {
+    const id = ++this.idEnregistrementPartieCourant;
+    const enregistrementPartie: EnregistrementPartie = {
+      ...enregistrement,
       id,
-      createdAt: new Date()
+      dateCreation: new Date()
     };
 
-    const records = await this.getGameRecords(record.userId);
-    records.push(gameRecord);
+    const enregistrements = await this.getEnregistrementsPartie(enregistrement.idUtilisateur);
+    enregistrements.push(enregistrementPartie);
 
     await fs.writeFile(
-      this.getGameRecordsFilePath(record.userId),
-      JSON.stringify(records, null, 2)
+      this.getCheminFichierEnregistrementsPartie(enregistrement.idUtilisateur),
+      JSON.stringify(enregistrements, null, 2)
     );
 
-    return gameRecord;
+    return enregistrementPartie;
   }
 
-  async getGameRecords(userId: number): Promise<GameRecord[]> {
+  async getEnregistrementsPartie(idUtilisateur: number): Promise<EnregistrementPartie[]> {
     try {
-      const data = await fs.readFile(this.getGameRecordsFilePath(userId), 'utf-8');
-      const records = JSON.parse(data);
-      // Convert createdAt strings back to Date objects
-      return records.map((record: any) => ({
-        ...record,
-        createdAt: new Date(record.createdAt)
+      const donnees = await fs.readFile(this.getCheminFichierEnregistrementsPartie(idUtilisateur), 'utf-8');
+      const enregistrements = JSON.parse(donnees);
+      return enregistrements.map((enregistrement: any) => ({
+        ...enregistrement,
+        dateCreation: new Date(enregistrement.dateCreation)
       }));
     } catch {
       return [];
     }
   }
 
-  async getUserStats(userId: number): Promise<GameRecord[]> {
-    return this.getGameRecords(userId);
+  async getStatsUtilisateur(idUtilisateur: number): Promise<EnregistrementPartie[]> {
+    return this.getEnregistrementsPartie(idUtilisateur);
   }
 }
 
-export const storage = new JsonStorage();
+export const stockage = new StockageJson();

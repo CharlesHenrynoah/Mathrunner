@@ -1,11 +1,11 @@
 {
-  "username": "Charles",
-  "email": "Charles233@mail.com",
-  "password": "1e551be1505dd7a43a5c189e6b512121759844d86b6fccc81eacab9e6f8573345f44a2b3fc246c4771eadfe2bb58ae1cc5ed44d1c363d8c68b2867ff81a4c473.554c0705e7fae388ea46c82d78125001",
+  "username": "Charles2",
+  "email": "Cha23rle2s@mail.com",
+  "password": "8fc3e016aff800907a36a2760f2605f6c938c5ed82260ec1a72db7ec429f2ac6aa3b17cdb56fb01b23b3757cabe9e2f271ce45143dd23b88673b36367948ae6e.b46ecf180d24cde59f8d5e5ae84178e6",
   "confirmPassword": "Codeislife237@",
   "id": 2,
   "currentLevel": 1,
-  "totalScore": 10,
-  "gamesPlayed": 1,
-  "bestScore": 10
+  "totalScore": 60,
+  "gamesPlayed": 2,
+  "bestScore": 40
 }

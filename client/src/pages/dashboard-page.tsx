@@ -11,14 +11,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { GameStats } from "@shared/schema";
+import { StatistiquesPartie } from "@shared/schema";
 import { format } from "date-fns";
 import { Loader2, Trophy, Star, Activity, Brain, Clock, Target } from "lucide-react";
 
 export default function DashboardPage() {
   const { user, logoutMutation } = useAuth();
 
-  const { data: stats, isLoading } = useQuery<GameStats>({
+  const { data: stats, isLoading } = useQuery<StatistiquesPartie>({
     queryKey: ["/api/stats"],
   });
 
@@ -57,7 +57,7 @@ export default function DashboardPage() {
               <Trophy className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.bestScore ?? 0}</div>
+              <div className="text-2xl font-bold">{stats?.meilleurScore ?? 0}</div>
             </CardContent>
           </Card>
           <Card>
@@ -66,7 +66,7 @@ export default function DashboardPage() {
               <Star className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.avgScore ?? 0}</div>
+              <div className="text-2xl font-bold">{stats?.scoreMoyen ?? 0}</div>
             </CardContent>
           </Card>
           <Card>
@@ -75,7 +75,7 @@ export default function DashboardPage() {
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.overallAccuracy ?? 0}%</div>
+              <div className="text-2xl font-bold">{stats?.precisionGlobale ?? 0}%</div>
             </CardContent>
           </Card>
           <Card>
@@ -85,7 +85,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {stats?.avgResponseTime ? stats.avgResponseTime.toFixed(2) : "0.00"}s
+                {stats?.tempsReponseMoyen ? stats.tempsReponseMoyen.toFixed(2) : "0.00"}s
               </div>
             </CardContent>
           </Card>
@@ -109,12 +109,12 @@ export default function DashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Object.entries(stats?.typeStats ?? {}).map(([type, data]) => (
+                  {Object.entries(stats?.statsParType ?? {}).map(([type, data]) => (
                     <TableRow key={type}>
                       <TableCell className="font-medium capitalize">{type}</TableCell>
-                      <TableCell>{data.correct}</TableCell>
+                      <TableCell>{data.correctes}</TableCell>
                       <TableCell>{data.total}</TableCell>
-                      <TableCell>{data.accuracy}%</TableCell>
+                      <TableCell>{data.precision}%</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -131,29 +131,29 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Score</p>
-                  <p className="text-2xl font-bold">{stats?.lastGame?.score ?? 0}</p>
+                  <p className="text-2xl font-bold">{stats?.dernièrePartie?.score ?? 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Niveau atteint</p>
-                  <p className="text-2xl font-bold">{stats?.lastGame?.level ?? 0}</p>
+                  <p className="text-2xl font-bold">{stats?.dernièrePartie?.niveau ?? 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Questions correctes</p>
-                  <p className="text-2xl font-bold">{stats?.lastGame?.correct ?? 0}</p>
+                  <p className="text-2xl font-bold">{stats?.dernièrePartie?.correctes ?? 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Questions incorrectes</p>
-                  <p className="text-2xl font-bold">{stats?.lastGame?.incorrect ?? 0}</p>
+                  <p className="text-2xl font-bold">{stats?.dernièrePartie?.incorrectes ?? 0}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Temps moyen de réponse</p>
                   <p className="text-2xl font-bold">
-                    {stats?.lastGame?.responseTime ? stats.lastGame.responseTime.toFixed(2) : "0.00"}s
+                    {stats?.dernièrePartie?.tempsReponse ? stats.dernièrePartie.tempsReponse.toFixed(2) : "0.00"}s
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Meilleur type</p>
-                  <p className="text-2xl font-bold capitalize">{stats?.lastGame?.bestType ?? "-"}</p>
+                  <p className="text-2xl font-bold capitalize">{stats?.dernièrePartie?.meilleurType ?? "-"}</p>
                 </div>
               </div>
             </CardContent>
@@ -176,13 +176,13 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {stats?.recentGames?.map((record) => (
+                {stats?.partiesRecentes?.map((record) => (
                   <TableRow key={record.id}>
                     <TableCell>
-                      {format(new Date(record.createdAt), "dd/MM/yyyy HH:mm")}
+                      {format(new Date(record.dateCreation), "dd/MM/yyyy HH:mm")}
                     </TableCell>
-                    <TableCell className="capitalize">{record.problemType}</TableCell>
-                    <TableCell>{record.level}</TableCell>
+                    <TableCell className="capitalize">{record.typeProbleme}</TableCell>
+                    <TableCell>{record.niveau}</TableCell>
                     <TableCell>{record.score}</TableCell>
                   </TableRow>
                 ))}

@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertUserSchema, loginSchema } from "@shared/schema";
+import { schemaInsertionUtilisateur, schemaConnexion, type InsertionUtilisateur, type DonneesConnexion } from "@shared/schema";
 import { Redirect } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,18 +12,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
 
-  const loginForm = useForm({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { username: "", password: "" }
+  const loginForm = useForm<DonneesConnexion>({
+    resolver: zodResolver(schemaConnexion),
+    defaultValues: { nomUtilisateur: "", motDePasse: "" }
   });
 
-  const registerForm = useForm({
-    resolver: zodResolver(insertUserSchema),
+  const registerForm = useForm<InsertionUtilisateur>({
+    resolver: zodResolver(schemaInsertionUtilisateur),
     defaultValues: { 
-      username: "", 
+      nomUtilisateur: "", 
       email: "",
-      password: "", 
-      confirmPassword: "" 
+      motDePasse: "", 
+      confirmationMotDePasse: "" 
     }
   });
 
@@ -50,9 +50,9 @@ export default function AuthPage() {
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="login-username">Nom d'utilisateur</Label>
-                      <Input id="login-username" {...loginForm.register("username")} />
-                      {loginForm.formState.errors.username && (
-                        <p className="text-sm text-red-500">{loginForm.formState.errors.username.message}</p>
+                      <Input id="login-username" {...loginForm.register("nomUtilisateur")} />
+                      {loginForm.formState.errors.nomUtilisateur && (
+                        <p className="text-sm text-red-500">{loginForm.formState.errors.nomUtilisateur.message}</p>
                       )}
                     </div>
                     <div>
@@ -60,10 +60,10 @@ export default function AuthPage() {
                       <Input 
                         id="login-password" 
                         type="password" 
-                        {...loginForm.register("password")} 
+                        {...loginForm.register("motDePasse")} 
                       />
-                      {loginForm.formState.errors.password && (
-                        <p className="text-sm text-red-500">{loginForm.formState.errors.password.message}</p>
+                      {loginForm.formState.errors.motDePasse && (
+                        <p className="text-sm text-red-500">{loginForm.formState.errors.motDePasse.message}</p>
                       )}
                     </div>
                     <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
@@ -78,9 +78,9 @@ export default function AuthPage() {
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="register-username">Nom d'utilisateur</Label>
-                      <Input id="register-username" {...registerForm.register("username")} />
-                      {registerForm.formState.errors.username && (
-                        <p className="text-sm text-red-500">{registerForm.formState.errors.username.message}</p>
+                      <Input id="register-username" {...registerForm.register("nomUtilisateur")} />
+                      {registerForm.formState.errors.nomUtilisateur && (
+                        <p className="text-sm text-red-500">{registerForm.formState.errors.nomUtilisateur.message}</p>
                       )}
                     </div>
                     <div>
@@ -99,10 +99,10 @@ export default function AuthPage() {
                       <Input 
                         id="register-password" 
                         type="password" 
-                        {...registerForm.register("password")} 
+                        {...registerForm.register("motDePasse")} 
                       />
-                      {registerForm.formState.errors.password && (
-                        <p className="text-sm text-red-500">{registerForm.formState.errors.password.message}</p>
+                      {registerForm.formState.errors.motDePasse && (
+                        <p className="text-sm text-red-500">{registerForm.formState.errors.motDePasse.message}</p>
                       )}
                     </div>
                     <div>
@@ -110,10 +110,10 @@ export default function AuthPage() {
                       <Input 
                         id="register-confirm-password" 
                         type="password" 
-                        {...registerForm.register("confirmPassword")} 
+                        {...registerForm.register("confirmationMotDePasse")} 
                       />
-                      {registerForm.formState.errors.confirmPassword && (
-                        <p className="text-sm text-red-500">{registerForm.formState.errors.confirmPassword.message}</p>
+                      {registerForm.formState.errors.confirmationMotDePasse && (
+                        <p className="text-sm text-red-500">{registerForm.formState.errors.confirmationMotDePasse.message}</p>
                       )}
                     </div>
                     <Button type="submit" className="w-full" disabled={registerMutation.isPending}>

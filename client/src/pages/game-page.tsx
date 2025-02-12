@@ -13,112 +13,112 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Runner } from "@/components/Runner";
 import { Coach } from "@/components/Coach";
 
-interface GameStats {
+interface StatistiquesJeu {
   totalQuestions: number;
-  totalCorrect: number;
-  totalIncorrect: number;
+  totalCorrectes: number;
+  totalIncorrectes: number;
   startTime: number;
   totalResponseTime: number;
   typeStats: {
-    addition: { correct: number; total: number };
-    subtraction: { correct: number; total: number };
-    multiplication: { correct: number; total: number };
-    division: { correct: number; total: number };
-    power: { correct: number; total: number };
-    algebra: { correct: number; total: number };
+    addition: { correctes: number; total: number };
+    soustraction: { correctes: number; total: number };
+    multiplication: { correctes: number; total: number };
+    division: { correctes: number; total: number };
+    puissance: { correctes: number; total: number };
+    algebra: { correctes: number; total: number };
   };
 }
 
 export default function GamePage() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
-  const [answer, setAnswer] = useState("");
+  const [reponse, setReponse] = useState("");
   const [score, setScore] = useState(0);
-  const [problem, setProblem] = useState(generateProblem(1));
+  const [probleme, setProbleme] = useState(generateProblem(1));
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
-  const [timeLeft, setTimeLeft] = useState(100);
-  const [isActive, setIsActive] = useState(true);
-  const [successfulProblems, setSuccessfulProblems] = useState(0);
-  const [currentLevel, setCurrentLevel] = useState(1);
-  const [maxLevelReached, setMaxLevelReached] = useState(1);
-  const [problemTypes, setProblemTypes] = useState(new Set<string>());
-  const [questionStartTime, setQuestionStartTime] = useState(Date.now());
-  const [gameStats, setGameStats] = useState<GameStats>({
+  const [tempsRestant, setTempsRestant] = useState(100);
+  const [estActif, setEstActif] = useState(true);
+  const [problemesReussis, setProblemesReussis] = useState(0);
+  const [niveauActuel, setNiveauActuel] = useState(1);
+  const [niveauMaxAtteint, setNiveauMaxAtteint] = useState(1);
+  const [typesProblemes, setTypesProblemes] = useState(new Set<string>());
+  const [debutQuestion, setDebutQuestion] = useState(Date.now());
+  const [statsJeu, setStatsJeu] = useState<StatistiquesJeu>({
     totalQuestions: 0,
-    totalCorrect: 0,
-    totalIncorrect: 0,
+    totalCorrectes: 0,
+    totalIncorrectes: 0,
     startTime: Date.now(),
     totalResponseTime: 0,
     typeStats: {
-      addition: { correct: 0, total: 0 },
-      subtraction: { correct: 0, total: 0 },
-      multiplication: { correct: 0, total: 0 },
-      division: { correct: 0, total: 0 },
-      power: { correct: 0, total: 0 },
-      algebra: { correct: 0, total: 0 }
+      addition: { correctes: 0, total: 0 },
+      soustraction: { correctes: 0, total: 0 },
+      multiplication: { correctes: 0, total: 0 },
+      division: { correctes: 0, total: 0 },
+      puissance: { correctes: 0, total: 0 },
+      algebra: { correctes: 0, total: 0 }
     }
   });
 
-  const baseTime = 400;
-  const timePerLevel = () => baseTime;
+  const tempsBase = 400;
+  const tempsParNiveau = () => tempsBase;
 
   useEffect(() => {
     handleRestart();
     return () => {
-      submitGameRecord();
+      soumettreEnregistrementPartie();
     };
   }, []);
 
-  const submitGameRecord = () => {
+  const soumettreEnregistrementPartie = () => {
     if (score > 0) {
-      const avgResponseTime = gameStats.totalQuestions > 0 ? gameStats.totalResponseTime / gameStats.totalQuestions : 0;
-      submitRecord.mutate({
+      const tempsReponseMoyen = statsJeu.totalQuestions > 0 ? statsJeu.totalResponseTime / statsJeu.totalQuestions : 0;
+      soumettreRecord.mutate({
         score,
-        level: maxLevelReached,
-        problemType: Array.from(problemTypes).join(', '),
-        totalQuestions: gameStats.totalQuestions,
-        totalCorrect: gameStats.totalCorrect,
-        totalIncorrect: gameStats.totalIncorrect,
-        avgResponseTime,
-        additionCorrect: gameStats.typeStats.addition.correct,
-        additionTotal: gameStats.typeStats.addition.total,
-        subtractionCorrect: gameStats.typeStats.subtraction.correct,
-        subtractionTotal: gameStats.typeStats.subtraction.total,
-        multiplicationCorrect: gameStats.typeStats.multiplication.correct,
-        multiplicationTotal: gameStats.typeStats.multiplication.total,
-        divisionCorrect: gameStats.typeStats.division.correct,
-        divisionTotal: gameStats.typeStats.division.total,
-        powerCorrect: gameStats.typeStats.power.correct,
-        powerTotal: gameStats.typeStats.power.total,
-        algebraCorrect: gameStats.typeStats.algebra.correct,
-        algebraTotal: gameStats.typeStats.algebra.total
+        niveau: niveauMaxAtteint,
+        typeProbleme: Array.from(typesProblemes).join(', '),
+        totalQuestions: statsJeu.totalQuestions,
+        totalCorrectes: statsJeu.totalCorrectes,
+        totalIncorrectes: statsJeu.totalIncorrectes,
+        tempsReponseMoyen,
+        additionCorrectes: statsJeu.typeStats.addition.correctes,
+        additionTotal: statsJeu.typeStats.addition.total,
+        soustractionCorrectes: statsJeu.typeStats.soustraction.correctes,
+        soustractionTotal: statsJeu.typeStats.soustraction.total,
+        multiplicationCorrectes: statsJeu.typeStats.multiplication.correctes,
+        multiplicationTotal: statsJeu.typeStats.multiplication.total,
+        divisionCorrectes: statsJeu.typeStats.division.correctes,
+        divisionTotal: statsJeu.typeStats.division.total,
+        puissanceCorrectes: statsJeu.typeStats.puissance.correctes,
+        puissanceTotal: statsJeu.typeStats.puissance.total,
+        algebraCorrectes: statsJeu.typeStats.algebra.correctes,
+        algebraTotal: statsJeu.typeStats.algebra.total
       });
     }
   };
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    let startTime = Date.now();
+    let tempsDebut = Date.now();
 
-    if (isActive && timeLeft > 0) {
+    if (estActif && tempsRestant > 0) {
       timer = setInterval(() => {
-        const elapsedTime = (Date.now() - startTime) / 1000;
-        const slowdownFactor = 1 + (elapsedTime * 0.02);
+        const tempsEcoule = (Date.now() - tempsDebut) / 1000;
+        const facteurRalentissement = 1 + (tempsEcoule * 0.02);
 
-        setTimeLeft((prevTime) => {
-          const newTime = prevTime - (3 / slowdownFactor);
-          if (newTime <= 0) {
-            setIsActive(false);
-            submitGameRecord();
+        setTempsRestant((prevTemps) => {
+          const nouveauTemps = prevTemps - (3 / facteurRalentissement);
+          if (nouveauTemps <= 0) {
+            setEstActif(false);
+            soumettreEnregistrementPartie();
           }
-          return newTime;
+          return nouveauTemps;
         });
-      }, timePerLevel());
+      }, tempsParNiveau());
     }
     return () => clearInterval(timer);
-  }, [isActive, maxLevelReached, problemTypes, successfulProblems]);
+  }, [estActif, niveauMaxAtteint, typesProblemes, problemesReussis]);
 
-  const submitRecord = useMutation({
+  const soumettreRecord = useMutation({
     mutationFn: async (data: any) => {
       const res = await apiRequest("POST", "/api/game/record", data);
       return res.json();
@@ -131,89 +131,89 @@ export default function GamePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const isCorrect = checkAnswer(problem, Number(answer));
+    const estCorrect = checkAnswer(probleme, Number(reponse));
 
-    // Update type stats for the current problem type
-    setGameStats(prev => {
-      const typeKey = problem.type as keyof typeof prev.typeStats;
+    // Mise à jour des statistiques pour le type de problème actuel
+    setStatsJeu(prev => {
+      const typeKey = probleme.type as keyof typeof prev.typeStats;
       return {
         ...prev,
         totalQuestions: prev.totalQuestions + 1,
-        totalCorrect: prev.totalCorrect + (isCorrect ? 1 : 0),
-        totalIncorrect: prev.totalIncorrect + (isCorrect ? 0 : 1),
-        totalResponseTime: prev.totalResponseTime + ((Date.now() - questionStartTime) / 1000),
+        totalCorrectes: prev.totalCorrectes + (estCorrect ? 1 : 0),
+        totalIncorrectes: prev.totalIncorrectes + (estCorrect ? 0 : 1),
+        totalResponseTime: prev.totalResponseTime + ((Date.now() - debutQuestion) / 1000),
         typeStats: {
           ...prev.typeStats,
           [typeKey]: {
-            correct: prev.typeStats[typeKey].correct + (isCorrect ? 1 : 0),
+            correctes: prev.typeStats[typeKey].correctes + (estCorrect ? 1 : 0),
             total: prev.typeStats[typeKey].total + 1
           }
         }
       };
     });
 
-    if (isCorrect) {
+    if (estCorrect) {
       setFeedback("correct");
       setScore(score + 10);
-      setSuccessfulProblems(prev => prev + 1);
-      setProblemTypes(prev => new Set(prev).add(problem.type));
-      setTimeLeft(100);
+      setProblemesReussis(prev => prev + 1);
+      setTypesProblemes(prev => new Set(prev).add(probleme.type));
+      setTempsRestant(100);
 
-      if (successfulProblems + 1 >= 5) {
-        setCurrentLevel(prev => prev + 1);
-        setMaxLevelReached(prev => Math.max(prev, currentLevel + 1));
-        setSuccessfulProblems(0);
+      if (problemesReussis + 1 >= 5) {
+        setNiveauActuel(prev => prev + 1);
+        setNiveauMaxAtteint(prev => Math.max(prev, niveauActuel + 1));
+        setProblemesReussis(0);
       }
     } else {
       setFeedback("incorrect");
     }
 
-    setAnswer("");
+    setReponse("");
     setTimeout(() => {
       setFeedback(null);
-      if (isCorrect) {
-        setProblem(generateProblem(currentLevel));
+      if (estCorrect) {
+        setProbleme(generateProblem(niveauActuel));
       }
-      setQuestionStartTime(Date.now());
+      setDebutQuestion(Date.now());
     }, 1000);
   };
 
   const handleRestart = () => {
     setScore(0);
-    setTimeLeft(100);
-    setIsActive(true);
-    setSuccessfulProblems(0);
-    setCurrentLevel(1);
-    setMaxLevelReached(1);
-    setProblemTypes(new Set());
-    setProblem(generateProblem(1));
-    setAnswer("");
+    setTempsRestant(100);
+    setEstActif(true);
+    setProblemesReussis(0);
+    setNiveauActuel(1);
+    setNiveauMaxAtteint(1);
+    setTypesProblemes(new Set());
+    setProbleme(generateProblem(1));
+    setReponse("");
     setFeedback(null);
-    setQuestionStartTime(Date.now());
-    setGameStats({
+    setDebutQuestion(Date.now());
+    setStatsJeu({
       totalQuestions: 0,
-      totalCorrect: 0,
-      totalIncorrect: 0,
+      totalCorrectes: 0,
+      totalIncorrectes: 0,
       startTime: Date.now(),
       totalResponseTime: 0,
       typeStats: {
-        addition: { correct: 0, total: 0 },
-        subtraction: { correct: 0, total: 0 },
-        multiplication: { correct: 0, total: 0 },
-        division: { correct: 0, total: 0 },
-        power: { correct: 0, total: 0 },
-        algebra: { correct: 0, total: 0 }
+        addition: { correctes: 0, total: 0 },
+        soustraction: { correctes: 0, total: 0 },
+        multiplication: { correctes: 0, total: 0 },
+        division: { correctes: 0, total: 0 },
+        puissance: { correctes: 0, total: 0 },
+        algebra: { correctes: 0, total: 0 }
       }
     });
   };
 
   const handleStopGame = () => {
-    setIsActive(false);
-    submitGameRecord();
+    setEstActif(false);
+    soumettreEnregistrementPartie();
   };
 
   const handleTargetReached = () => {
-    setTimeLeft(prev => Math.min(prev + 20, 100));
+    setTempsRestant(prev => Math.min(prev + 20, 100));
   };
 
   return (
@@ -223,11 +223,11 @@ export default function GamePage() {
           <div className="space-y-1">
             <h1 className="text-2xl font-bold">Math Runner</h1>
             <p className="text-muted-foreground">
-              Niveau actuel : {currentLevel} ({successfulProblems}/5)
+              Niveau actuel : {niveauActuel} ({problemesReussis}/5)
             </p>
           </div>
           <div className="space-x-4">
-            {!isActive && (
+            {!estActif && (
               <Button
                 variant="outline"
                 onClick={() => navigate("/dashboard")}
@@ -235,7 +235,7 @@ export default function GamePage() {
                 Tableau de bord
               </Button>
             )}
-            {isActive && (
+            {estActif && (
               <Button
                 variant="outline"
                 onClick={handleStopGame}
@@ -253,9 +253,9 @@ export default function GamePage() {
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <p className="text-sm font-medium">Temps restant</p>
-            <p className="text-sm">{Math.ceil(timeLeft)}%</p>
+            <p className="text-sm">{Math.ceil(tempsRestant)}%</p>
           </div>
-          <Progress value={timeLeft} className="h-2" />
+          <Progress value={tempsRestant} className="h-2" />
         </div>
 
         {feedback && (
@@ -273,29 +273,29 @@ export default function GamePage() {
           </Alert>
         )}
 
-        {isActive ? (
+        {estActif ? (
           <>
             <Runner onTargetReached={handleTargetReached} />
             <Coach
-              gameStats={{
-                typeStats: gameStats.typeStats,
-                totalCorrect: gameStats.totalCorrect,
-                totalIncorrect: gameStats.totalIncorrect,
-                avgResponseTime: gameStats.totalQuestions > 0 ?
-                  gameStats.totalResponseTime / gameStats.totalQuestions : 0
+              statsJeu={{
+                statsParType: statsJeu.typeStats,
+                totalCorrectes: statsJeu.totalCorrectes,
+                totalIncorrectes: statsJeu.totalIncorrectes,
+                tempsReponseMoyen: statsJeu.totalQuestions > 0 ?
+                  statsJeu.totalResponseTime / statsJeu.totalQuestions : 0
               }}
-              currentLevel={currentLevel}
-              timeLeft={timeLeft}
+              niveauActuel={niveauActuel}
+              tempsRestant={tempsRestant}
             />
             <Card>
               <CardContent className="p-6">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="text-center">
-                    <p className="text-4xl font-bold mb-4">{problem.question}</p>
+                    <p className="text-4xl font-bold mb-4">{probleme.question}</p>
                     <Input
                       type="number"
-                      value={answer}
-                      onChange={(e) => setAnswer(e.target.value)}
+                      value={reponse}
+                      onChange={(e) => setReponse(e.target.value)}
                       className="text-center text-2xl"
                       placeholder="Entrez votre réponse"
                       autoFocus
@@ -304,7 +304,7 @@ export default function GamePage() {
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={!answer}
+                    disabled={!reponse}
                   >
                     Valider
                   </Button>
@@ -317,7 +317,7 @@ export default function GamePage() {
             <CardContent className="p-6 text-center">
               <h2 className="text-2xl font-bold mb-4">Partie terminée!</h2>
               <p className="mb-4">Score final: {score}</p>
-              <p className="mb-4">Niveau maximum atteint: {maxLevelReached}</p>
+              <p className="mb-4">Niveau maximum atteint: {niveauMaxAtteint}</p>
               <Button onClick={handleRestart}>Nouvelle partie</Button>
             </CardContent>
           </Card>
