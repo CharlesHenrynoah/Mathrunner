@@ -196,11 +196,15 @@ function getMeilleurType(partie: any): string {
 
   let meilleurType = '-';
   let meilleurePrecision = 0;
+  const nombreMinimumQuestions = 2;  // Nombre minimum de questions pour considérer un type
 
   types.forEach(type => {
-    if (type.total > 0) {
+    if (type.total >= nombreMinimumQuestions) {
       const precision = (type.correctes / type.total) * 100;
-      if (precision > meilleurePrecision) {
+      // On ne met à jour le meilleur type que si la précision est strictement meilleure
+      // ou si elle est égale mais avec plus de questions
+      if (precision > meilleurePrecision || 
+          (precision === meilleurePrecision && type.total > types.find(t => t.nom === meilleurType)?.total)) {
         meilleurePrecision = precision;
         meilleurType = type.nom;
       }

@@ -1,11 +1,11 @@
 {
-  "nomUtilisateur": "Charles231",
-  "email": "Charles77@mail.com",
-  "motDePasse": "619c810c0165c8fb38608d9ef3dae18c6cf61c791c4e16b8bbc12e6132be6657d88ee517996f8266c8525ee4a9dbbed1d3ce849389366490f8772314ec73c179.b9d06ed86e409add7936dc4c4990e524",
+  "nomUtilisateur": "Charles",
+  "email": "noahcharleshenry8@gmail.com",
+  "motDePasse": "79a21d021107e872225a41c462aef2447149fca0aecf6fedefd3832f0de1df3e1ccb2d239e2d7359e635c4fd04e2d9d817e4172672ee0ab859628d595c8fd084.95a5771733d37b2df7089afc15528eeb",
   "confirmationMotDePasse": "Codeislife237@",
   "id": 2,
-  "niveauActuel": 1,
-  "scoreTotal": 0,
-  "partiesJouees": 0,
-  "meilleurScore": 0
+  "niveauActuel": 2,
+  "scoreTotal": 70,
+  "partiesJouees": 2,
+  "meilleurScore": 50
 }

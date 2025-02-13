@@ -40,14 +40,14 @@ function generateLevel1Problem(): Problem {
     return {
       question: `${bigger} - ${smaller}`,
       answer: bigger - smaller,
-      type: "subtraction"
+      type: "soustraction"
     };
   }
 }
 
 function generateLevel2Problem(): Problem {
   const operation = Math.random() < 0.5 ? 
-    (Math.random() < 0.5 ? "addition" : "subtraction") :
+    (Math.random() < 0.5 ? "addition" : "soustraction") :
     (Math.random() < 0.5 ? "multiplication" : "division");
 
   switch (operation) {
@@ -60,7 +60,7 @@ function generateLevel2Problem(): Problem {
         type: operation
       };
     }
-    case "subtraction": {
+    case "soustraction": {
       const a = getRandomInt(25, 99);
       const b = getRandomInt(1, a);
       return {
